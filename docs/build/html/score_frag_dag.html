@@ -1,0 +1,520 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>score_frag_dag module &mdash; Pactolus 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Pactolus 0.1 documentation" href="index.html"/>
+        <link rel="up" title="pactolus Package" href="pactolus.html"/>
+        <link rel="next" title="score_spectra module" href="score_spectra.html"/>
+        <link rel="prev" title="generate_frag_dag module" href="generate_frag_dag.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Pactolus
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="generate_frag_dag.html">generate_frag_dag module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">score_frag_dag module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="score_spectra.html">score_spectra module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Pactolus</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a> &raquo;</li>
+      
+    <li>score_frag_dag module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/score_frag_dag.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pactolus.score_frag_dag">
+<span id="score-frag-dag-module"></span><h1>score_frag_dag module<a class="headerlink" href="#module-pactolus.score_frag_dag" title="Permalink to this headline">¶</a></h1>
+<p>Score spectra/scans against a collection of molecular fragmentation trees.</p>
+<dl class="data">
+<dt id="pactolus.score_frag_dag.HIT_TABLE_DTYPE">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">HIT_TABLE_DTYPE</code><em class="property"> = dtype([('score', '&lt;f4'), ('id', 'S100'), ('name', 'S100'), ('mass', '&lt;f4'), ('n_peaks', '&lt;i4'), ('n_match', '&lt;i4')])</em><a class="headerlink" href="#pactolus.score_frag_dag.HIT_TABLE_DTYPE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Numpy data type (dtype) used for hit tables</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="pactolus.score_frag_dag.METACYC_DTYPE">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">METACYC_DTYPE</code><em class="property"> = dtype([('metacyc_id', 'S30'), ('name', 'S100'), ('inchi', 'S1000'), ('lins', 'S400'), ('inchi_key', 'S40'), ('mass', '&lt;f8')])</em><a class="headerlink" href="#pactolus.score_frag_dag.METACYC_DTYPE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Numpy data type (dtype) used to store METACYC molecular databases</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.score_frag_dag.bfs_plausibility_score">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">bfs_plausibility_score</code><span class="sig-paren">(</span><em>plaus_score</em>, <em>tree</em>, <em>matches</em>, <em>nodes=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#bfs_plausibility_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.bfs_plausibility_score" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifies in place a numpy vector of plausibility scores for each fragment in a tree through breadth-first search.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>plaus_score</strong> &#8211; numpy 1D vector with len same as tree, value is plausibility score</li>
+<li><strong>tree</strong> &#8211; numpy structured array output by FragTree.numpy_tree</li>
+<li><strong>matches</strong> &#8211; numpy 1D vector of ints; the rows of tree that match any data peaks</li>
+<li><strong>nodes</strong> &#8211; numpy array with 1 dimension; row indices of tree currently being scored</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.score_frag_dag.calculate_MIDAS_score">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">calculate_MIDAS_score</code><span class="sig-paren">(</span><em>mz_intensity_arr</em>, <em>tree</em>, <em>mass_tol</em>, <em>neutralizations</em>, <em>max_depth=None</em>, <em>want_match_matrix=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#calculate_MIDAS_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.calculate_MIDAS_score" title="Permalink to this definition">¶</a></dt>
+<dd><p>Score the the plausibility that a given MS2 (or MSn) spectrum arose from a given compound.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>mz_intensity_arr</strong> &#8211; ndarray w/ shape (n_peaks, 2).  m/z values in col 0, intensities in col 1</li>
+<li><strong>tree</strong> &#8211; numpy structured array for a frag. tree of a molecule, usually from FragTree.numpy_tree</li>
+<li><strong>mass_tol</strong> &#8211; maximum mass in Da by which two MS2 (or MSn) peaks can differ</li>
+<li><strong>neutralizations</strong> &#8211; list of floats, adjustments (in Da) added to data peaks in order to neutralize them</li>
+<li><strong>max_depth</strong> &#8211; int, truncates tree, keeping only nodes &lt;= max_depth bond breakages away from root</li>
+<li><strong>want_match_matrix</strong> &#8211; bool, if True then tuple of (score, match_matrix) is returned, else return score only</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">score, float, a MIDAS score</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">match_matrix, a bool matrix with n_peaks columns and n_nodes rows.
+elements are True if given peak matches given node of frag_dag</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.score_frag_dag.calculate_lambda">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">calculate_lambda</code><span class="sig-paren">(</span><em>fragment_masses</em>, <em>data_masses</em>, <em>mass_tol</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#calculate_lambda"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.calculate_lambda" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates lambda values as described in the MIDAS paper [dx.doi.org/10.1021/ac5014783]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fragment_masses</strong> &#8211; np.ndarray of floats w/ shape (n,), theoretical masses from frag tree, in Da</li>
+<li><strong>data_masses</strong> &#8211; np.ndarray of floats w/ shape (n,), (neutralized) masses in Da detected in MS2 scan</li>
+<li><strong>mass_tol</strong> &#8211; float, maximum allowed mass difference in Da between theoretical and detected peaks</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return lambda:</th><td class="field-body"><p class="first last">np.ndarray of floats containing the lambda scores</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.score_frag_dag.crossref_to_db">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">crossref_to_db</code><span class="sig-paren">(</span><em>table_file</em>, <em>original_db</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#crossref_to_db"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.crossref_to_db" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cross-references pactolus results to name, structure,  etc. data in a flat text file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>table_file</strong> &#8211; string,     full path to .npy file containing tree file names and parent masses that
+was used to generate pactolus results. Or the numpy array directly.</li>
+<li><strong>original_db</strong> &#8211; string,     full path to flat text file containing DB</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return db_arr:</th><td class="field-body"><p class="first last">numpy structured array re-ordered to match table_file, with fields:
+&#8216;metacyc_id&#8217;,
+&#8216;name&#8217;
+&#8216;inchi&#8217;
+&#8216;lins&#8217;,
+&#8216;inchi_key&#8217;</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.score_frag_dag.find_matching_fragments">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">find_matching_fragments</code><span class="sig-paren">(</span><em>data_masses</em>, <em>tree</em>, <em>mass_tol</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#find_matching_fragments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.find_matching_fragments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find node sets in a tree whose mass is within mass_tol of a data_mz value</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data_masses</strong> &#8211; numpy 1D array, float, <em>neutralized</em> m/z values of data from an MS2 or MSn scan</li>
+<li><strong>tree</strong> &#8211; numpy structured array as output by FragDag</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">matching_frag_sets, list of lists; len is same as data_mzs; sublists are idxs to rows of tree that match</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">unique_matching_frags, numpy 1d array, a flattened numpy version of unique idxs in matching_frag_sets</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">make_file_lookup_table_by_MS1_mass</code><span class="sig-paren">(</span><em>tree_files=None</em>, <em>path=None</em>, <em>save_result=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#make_file_lookup_table_by_MS1_mass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a sorted table listing of .h5 file paths and (i) parent MS1 mass for input trees from generate_frag_dag.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tree_files</strong> &#8211; list of filenames (must be full-path!) containing trees to use for scoring</li>
+<li><strong>path</strong> &#8211; path to subdirectory containing all relevant .h5 files</li>
+<li><strong>save_result</strong> &#8211; if not None, the name of a file to which to save the numpy table as a</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">tree_files_by_ms1_mass, a numpy structured array with columns (i) filename and (ii) MS1 mass</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.score_frag_dag.make_pactolus_hit_table">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">make_pactolus_hit_table</code><span class="sig-paren">(</span><em>pactolus_results</em>, <em>table_file</em>, <em>original_db</em>, <em>return_list=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#make_pactolus_hit_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.make_pactolus_hit_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes a hit table in the same format as lbl-midas for comparison of the two algorithms</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pactolus_results</strong> &#8211; ndarray,    n_compounds by n_spectra matrix of pactolus scores</li>
+<li><strong>table_file</strong> &#8211; string,     full path to .npy file containing tree file names and parent masses that
+was used to generate pactolus results.  Or the numpy array directly.</li>
+<li><strong>original_db</strong> &#8211; string,     full path to flat text file containing the molecule DB used to generate the
+fragmentation trees. The primary use for this is to enable lookup of molecule names.</li>
+<li><strong>return_list</strong> &#8211; bool, whether to return a list of hit tables</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">hit_table_list, a list of hit_tables</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.score_frag_dag.neutralize_mzs">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">neutralize_mzs</code><span class="sig-paren">(</span><em>data_mz_intensity_arr</em>, <em>neutralizations</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#neutralize_mzs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.neutralize_mzs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts data m/z values to possible data neutral mass values (in Da) by combinatorial subtraction from ionizations.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data_mz_intensity_arr</strong> &#8211; numpy float with shape (num_peaks, 2), assumed normalized i.e. x[:, 1].sum() = 1</li>
+<li><strong>neutralizations</strong> &#8211; masses: in Da of singly charged ionic species whose removal results in a neutral mass.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">neutralized_mass_intensity_arr</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.score_frag_dag.normalize_intensities">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">normalize_intensities</code><span class="sig-paren">(</span><em>mz_intensity_arr</em>, <em>order=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#normalize_intensities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.normalize_intensities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalizes intensities in a 2D numpy array of m/z values &amp; intensities.
+Designed to be used non-neutralized data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>mz_intensity_arr</strong> &#8211; numpy float with shape (num_peaks, 2)</li>
+<li><strong>order</strong> &#8211; int, if 1 then L1 norm is returned; otherwise L2 norm is computed</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">out, a normalized version of mz_intensity_arr with intensities that sum to 1</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Note: this function assumes intensities can never be negative.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.score_frag_dag.score_peakcube_against_trees">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">score_peakcube_against_trees</code><span class="sig-paren">(</span><em>peakcube</em>, <em>peakmzs</em>, <em>ms1_mz</em>, <em>params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#score_peakcube_against_trees"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.score_peakcube_against_trees" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a score cube of MIDAS scores for each</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>peakcube</strong> &#8211; numpy ndarray of floats   Stores peak intensities.  Has shape (nx, ..., n_peaks).
+i.e., the last axis is a peak index, and prior axes are
+an arbitrary number of spatial or time coordinates</li>
+<li><strong>peakmzs</strong> &#8211; numpy array of floats     Stores fragment peak m/z values.  Has shape (n_peaks,)</li>
+<li><strong>ms1_mz</strong> &#8211; float                     the (unneutralized) MS1 mass of the precursor ions.</li>
+<li><strong>params</strong> &#8211; <p>dictionary containing other required parameters</p>
+<ul>
+<li><code class="docutils literal"><span class="pre">file_lookup_table</span></code>: full path to a .npy file having a numpy structured array with columns                                      (i) filename and (ii) MS1 mass. Alternatively this may also be the numpy                                      array directly.</li>
+<li><code class="docutils literal"><span class="pre">ms1_mass_tol</span></code>       float, max. diff. in Da of tree_parent_mass &amp; MS1_precursor_mass</li>
+<li><code class="docutils literal"><span class="pre">ms2_mass_tol</span></code>       float, max. mass in Da by which two MS2/MSn peaks can differ</li>
+<li><code class="docutils literal"><span class="pre">neutralizations</span></code>:   list of floats, adjustments (in Da) added to data peaks in order to neutralize them</li>
+<li><code class="docutils literal"><span class="pre">max_depth</span></code>          int, optional.  For restricting scoring to lower max depths than                                     are present in the supplied tree</li>
+</ul>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">score_cube       a numpy ndarray of shape (nx, ..., len(file_lookup_table))</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Unlike score_scan_list_against_trees, this function is designed to work on numpy arrays of spectra.  It is more</dt>
+<dd><dl class="first last docutils">
+<dt>appropriate for imaging data where:</dt>
+<dd><ol class="first last arabic simple">
+<li>an common MS1 precursor has been fragmented and scanned many times/places, as long as</li>
+<li>a global peak finder has been run on all spectra, so peak intensities exist for every peak at every pixel</li>
+</ol>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.score_frag_dag.score_scan_list_against_trees">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">score_scan_list_against_trees</code><span class="sig-paren">(</span><em>scan_list</em>, <em>ms1_mz</em>, <em>params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#score_scan_list_against_trees"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.score_scan_list_against_trees" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a score cube of MIDAS scores for each</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>scan_list</strong> &#8211; list of numpy ndarrays    Stores peak mzs and intensities.  Each list el has shape of
+(n_peaks, 2), with mzs in column 1 an intensities in col 2.
+Length of list is n_scans long</li>
+<li><strong>ms1_mz</strong> &#8211; list of floats            The (unneutralized) MS1 mz/s of the precursor ions.
+Must have same length as scan_list, i.e. len(ms1_ms) = num_scans</li>
+<li><strong>params</strong> &#8211; <p>dictionary containing other required parameters</p>
+<ul>
+<li><code class="docutils literal"><span class="pre">file_lookup_table</span></code>: full path to a .npy file having a numpy structured array with columns                                      (i) filename and (ii) MS1 mass. Alternatively, this may also be the                                      numpy array directly.</li>
+<li><code class="docutils literal"><span class="pre">ms1_mass_tol</span></code>       float, max. diff. in Da of tree_parent_mass &amp; MS1_precursor_mass</li>
+<li><code class="docutils literal"><span class="pre">ms2_mass_tol</span></code>       float, max. mass in Da by which two MS2/MSn peaks can differ</li>
+<li><code class="docutils literal"><span class="pre">neutralizations</span></code>:   list of floats, adjustments (in Da) added to data peaks in order to neutralize them</li>
+<li><code class="docutils literal"><span class="pre">max_depth</span></code>          int, optional.  For restricting scoring to lower max depths than                                     are present in the supplied tree</li>
+</ul>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">score_matrix     a numpy ndarray of shape (n_scans, len(file_lookup_table))</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Unlike score_peakcube_against_trees, this function is designed to work on _lists_ of spectra.  It is more</dt>
+<dd>appropriate for spectra directly extracted from mzML files or for centroided data.  This function does NOT
+assume that each scan in the list has the same precursors.</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="score_spectra.html" class="btn btn-neutral float-right" title="score_spectra module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="generate_frag_dag.html" class="btn btn-neutral" title="generate_frag_dag module" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Curt R. Fischer, Oliver Ruebel, and Benjamin P. Bowen.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,415 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>generate_frag_dag module &mdash; Pactolus 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Pactolus 0.1 documentation" href="index.html"/>
+        <link rel="up" title="pactolus Package" href="pactolus.html"/>
+        <link rel="next" title="score_frag_dag module" href="score_frag_dag.html"/>
+        <link rel="prev" title="pactolus Package" href="pactolus.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Pactolus
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="">generate_frag_dag module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="score_frag_dag.html">score_frag_dag module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="score_spectra.html">score_spectra module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Pactolus</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a> &raquo;</li>
+      
+    <li>generate_frag_dag module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/generate_frag_dag.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pactolus.generate_frag_dag">
+<span id="generate-frag-dag-module"></span><h1>generate_frag_dag module<a class="headerlink" href="#module-pactolus.generate_frag_dag" title="Permalink to this headline">¶</a></h1>
+<p>Generate fragmentation trees for molecules.</p>
+<dl class="class">
+<dt id="pactolus.generate_frag_dag.FragTree">
+<em class="property">class </em><code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">FragTree</code><span class="sig-paren">(</span><em>mol</em>, <em>isotope_dict</em>, <em>max_depth</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#FragTree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.FragTree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>A class to represent fragmentation trees of rdkit.Chem.rdchem.Mol objects.</p>
+<p>Note that bonds broken come from self.mol, while calculation of correct monoisotopic
+masses requires self.molH. Thus, functionality of this code requires that Chem.AddHs()
+maintains bond and atom indices between mol and molH.  For all cases checked by the authors,
+this is true.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>mol</strong> &#8211; rdkit.Chem.rdchem.Mol object, the parent molecule of the fragmentation tree
+this molecule must (i) be fully connected by covalent bonds and
+(ii) have only _implicit_ hydrogens</li>
+<li><strong>molH</strong> &#8211; rdkit.Chem.rdchem.Mol object, a version of mol with but with explicit hydrogens</li>
+<li><strong>atom_masses</strong> &#8211; list of floats, the mass of each atom in molecule, stored outside rdkit for speed</li>
+<li><strong>breakable_bonds</strong> &#8211; list of ints, indices of bonds which should be broken during tree formation</li>
+<li><strong>isotope_dict</strong> &#8211; dictionary with element symbols as keys and mass numbers as values</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="pactolus.generate_frag_dag.FragTree.annotate_fragments">
+<code class="descname">annotate_fragments</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#FragTree.annotate_fragments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.FragTree.annotate_fragments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modify self.fragment_dict in place, adding info on  the parent nodes and monoisotopic masses of fragments.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><cite>fragment_dict</cite>, which is a Python <cite>dict</cite> with:<ul>
+<li><cite>keys</cite>:   (sorted) tuple of atom indices in the fragment</li>
+<li><cite>values</cite>: dict with the following keys: values:<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">path</span></code>:   (sorted) tuple of unique shortest bond breakage path giving rise to fragment</li>
+<li><code class="docutils literal"><span class="pre">parent</span></code>: the &#8216;path&#8217; of the parent node</li>
+<li><code class="docutils literal"><span class="pre">mass</span></code> :  the monoisotopic mass of the fragment</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pactolus.generate_frag_dag.FragTree.calculate_monoisotopic_mass">
+<code class="descname">calculate_monoisotopic_mass</code><span class="sig-paren">(</span><em>atom_indices</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#FragTree.calculate_monoisotopic_mass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.FragTree.calculate_monoisotopic_mass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the monoisotopic mass of a subset of atoms in self.molH from a list of atom indices.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>atom_indices</strong> &#8211; a list of unique integers, indices of the atoms that are in the fragment.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pactolus.generate_frag_dag.FragTree.convert_dict_to_numpy">
+<code class="descname">convert_dict_to_numpy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#FragTree.convert_dict_to_numpy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.FragTree.convert_dict_to_numpy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a fragment dict to mass-sorted numpy format for fast and easy searching, scoring, and storage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pactolus.generate_frag_dag.FragTree.make_fragment_dict">
+<code class="descname">make_fragment_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#FragTree.make_fragment_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.FragTree.make_fragment_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses an iterable to compute all nodes of a fragmentation tree, but without retaining parent/child info.</p>
+<p>This function is used modify self.fragment_dict in place in the <code class="docutils literal"><span class="pre">__init__</span></code> constructor</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">fragment_dict ; Python dict with<p><strong>keys</strong>:   (sorted) tuple of atom indices in the fragment</p>
+<p><strong>values</strong>: Python dict with</p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>keys</strong>: &#8216;path&#8217;</li>
+<li><strong>values</strong>: (sorted) tuple of unique shortest bond breakage path giving rise to fragment</li>
+</ul>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pactolus.generate_frag_dag.FragTree.set_isotopes">
+<code class="descname">set_isotopes</code><span class="sig-paren">(</span><em>mol</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#FragTree.set_isotopes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.FragTree.set_isotopes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modifies in place the isotope property of all atoms in a molecule, according to the supplied dictionary.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pactolus.generate_frag_dag.FragTreeLibrary">
+<em class="property">class </em><code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">FragTreeLibrary</code><span class="sig-paren">(</span><em>file_params</em>, <em>max_depth</em>, <em>isotope_dict=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#FragTreeLibrary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.FragTreeLibrary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>A class to make sets of FragTree objects from a file with a list of InChIs and store results in hdf5.</p>
+<dl class="method">
+<dt id="pactolus.generate_frag_dag.FragTreeLibrary.grow_tree_from_inchi">
+<code class="descname">grow_tree_from_inchi</code><span class="sig-paren">(</span><em>inchi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#FragTreeLibrary.grow_tree_from_inchi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.FragTreeLibrary.grow_tree_from_inchi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes a FragTree from an InChI string; this is desiged to be parallizable over molecules by mpi.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param:</th><td class="field-body">inchi, string, an InChI string for a molecule</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pactolus.generate_frag_dag.RawDescriptionDefaultHelpArgParseFormatter">
+<em class="property">class </em><code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">RawDescriptionDefaultHelpArgParseFormatter</code><span class="sig-paren">(</span><em>prog</em>, <em>indent_increment=2</em>, <em>max_help_position=24</em>, <em>width=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#RawDescriptionDefaultHelpArgParseFormatter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.RawDescriptionDefaultHelpArgParseFormatter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">argparse.ArgumentDefaultsHelpFormatter</span></code>, <code class="xref py py-class docutils literal"><span class="pre">argparse.RawDescriptionHelpFormatter</span></code></p>
+<p>Simple derived formatter class for use with argparse</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.generate_frag_dag.command_line_params">
+<code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">command_line_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#command_line_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.command_line_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setup and parse the command line parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">dict with command line parameters</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.generate_frag_dag.get_isotope_dict">
+<code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">get_isotope_dict</code><span class="sig-paren">(</span><em>isostope_file='../data/max_abundance_isotopes.csv'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#get_isotope_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.get_isotope_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns isotope_dict (element symbols (strings) are keys and mass numbers (ints) are values) by reading a file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.generate_frag_dag.main">
+<code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.generate_frag_dag.nonprefix_combinations">
+<code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">nonprefix_combinations</code><span class="sig-paren">(</span><em>iterable</em>, <em>max_len</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#nonprefix_combinations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.nonprefix_combinations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create list of tuples of sorted integers of length 1 to max_len while
+excluding tuples that are a prefix of another tuple.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>iterable</strong> &#8211; </li>
+<li><strong>max_len</strong> &#8211; Maximum tuple length</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.generate_frag_dag.print_arguments">
+<code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">print_arguments</code><span class="sig-paren">(</span><em>cl_params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#print_arguments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.print_arguments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the settings from the dict with command line arguments</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cl_params</strong> &#8211; Dict with the command line arguments</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.generate_frag_dag.randomword">
+<code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">randomword</code><span class="sig-paren">(</span><em>length</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#randomword"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.randomword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a random string of lowercase alphabetic characters.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.generate_frag_dag.remove_bonds">
+<code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">remove_bonds</code><span class="sig-paren">(</span><em>rw_mol</em>, <em>mol</em>, <em>bond_indices</em>, <em>undo=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#remove_bonds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.remove_bonds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function that modifies in place a rdkit.Chem.rdchem.RWMol object by removing bonds.</p>
+<p>Useful because RWMol.RemoveBond() method annoyingly takes beginning and ending atom indices,
+not bond indices, and also because there is no RWMol.RemoveBonds() vectorized version.</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="score_frag_dag.html" class="btn btn-neutral float-right" title="score_frag_dag module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pactolus.html" class="btn btn-neutral" title="pactolus Package" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Curt R. Fischer, Oliver Ruebel, and Benjamin P. Bowen.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

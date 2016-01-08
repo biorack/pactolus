@@ -1,0 +1,276 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Overview &mdash; Pactolus 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Pactolus 0.1 documentation" href="index.html"/>
+        <link rel="next" title="pactolus Package" href="pactolus.html"/>
+        <link rel="prev" title="Welcome to Pactolus’s documentation!" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Pactolus
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#generating-fragmentation-trees">Generating fragmentation trees</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#scoring-spectra-against-trees">Scoring spectra against trees</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#scoring-many-spectra-against-many-trees">Scoring many spectra against many trees</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#scoring-a-single-spectrum-against-a-single-tree">Scoring a single spectrum against a single tree</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#computing-the-matched-atoms">Computing the matched atoms</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#scoring-spectra-against-spectra">Scoring spectra against spectra</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Pactolus</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Overview</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/overview.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<p>The <a class="reference internal" href="pactolus.html#module-pactolus" title="pactolus"><code class="xref py py-mod docutils literal"><span class="pre">pactolus</span></code></a> python package implements efficient methods for computational identification of metabolites
+based on the scoring of measured fragmentation spectra against a collection of molecular fragmentation trees.</p>
+<div class="section" id="generating-fragmentation-trees">
+<h2>Generating fragmentation trees<a class="headerlink" href="#generating-fragmentation-trees" title="Permalink to this headline">¶</a></h2>
+<p>To achieve computational efficiency, we pre-compute fragmentation in parallel via <a class="reference internal" href="generate_frag_dag.html#module-pactolus.generate_frag_dag" title="pactolus.generate_frag_dag"><code class="xref py py-mod docutils literal"><span class="pre">pactolus.generate_frag_dag</span></code></a>.
+We store fragmentation trees in HDF5 files, enabling efficient sharing and reuse of fragmentation trees. This
+approach also enables the flexible extension to select and add molecules of interest for scoring, simply by
+selecting/adding fragmetation tree files.</p>
+</div>
+<div class="section" id="scoring-spectra-against-trees">
+<h2>Scoring spectra against trees<a class="headerlink" href="#scoring-spectra-against-trees" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="score_frag_dag.html#module-pactolus.score_frag_dag" title="pactolus.score_frag_dag"><code class="xref py py-mod docutils literal"><span class="pre">pactolus.score_frag_dag</span></code></a> is then used to score spectra/scans against a collection of molecular fragmentation
+trees. Some typical uses of this module are as follows:</p>
+<div class="section" id="scoring-many-spectra-against-many-trees">
+<h3>Scoring many spectra against many trees<a class="headerlink" href="#scoring-many-spectra-against-many-trees" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><ol class="arabic">
+<li><p class="first"><strong>Define the list of fragmentation trees</strong>: Call <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass" title="pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass"><code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass()</span></code></a> to creates a sorted table listing containing the <strong>i)</strong> .h5 file paths and <strong>ii)</strong> parent MS1 mass for input trees from <a class="reference internal" href="score_frag_dag.html#module-pactolus.score_frag_dag" title="pactolus.score_frag_dag"><code class="xref py py-mod docutils literal"><span class="pre">pactolus.score_frag_dag</span></code></a>. We may save the list as a <code class="docutils literal"><span class="pre">.npy</span></code> numpy file for later reuse.</p>
+</li>
+<li><p class="first"><strong>Score the spectra</strong>:</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li>The function <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.score_scan_list_against_trees" title="pactolus.score_frag_dag.score_scan_list_against_trees"><code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.score_scan_list_against_trees()</span></code></a> then allows us to score an arbitrary list of spectra against our list of trees.</li>
+<li>To score a full <code class="docutils literal"><span class="pre">(x,y,m/z)</span></code> cube of fragmentation spectra with a common <code class="docutils literal"><span class="pre">m/z</span></code> axis, we can use <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.score_peakcube_against_trees" title="pactolus.score_frag_dag.score_peakcube_against_trees"><code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.score_peakcube_against_trees()</span></code></a>. This is useful, e.g., in this case of MS2 imaging data, where we acquire the fragmentation spectra for the same precursor <code class="docutils literal"><span class="pre">m/z</span></code> at every image location (pixel).</li>
+</ol>
+</div></blockquote>
+</li>
+<li><p class="first"><strong>Compute the hit table</strong>: To calculate a list of summary hit-tables (one table per spectrum) we then call <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.make_pactolus_hit_table" title="pactolus.score_frag_dag.make_pactolus_hit_table"><code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.make_pactolus_hit_table()</span></code></a>. A hit table is a structured numpy array that summarizes all scores for a single spectrum. Each entry in the hit-table describes the <cite>score</cite>, <cite>id</cite>, <cite>name</cite>,  <cite>mass</cite>, <cite>n_peaks</cite>, <cite>n_match</cite> for a given fragmentation tree (i.e., molecule) against the given spectrum (see also <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.HIT_TABLE_DTYPE" title="pactolus.score_frag_dag.HIT_TABLE_DTYPE"><code class="xref py py-data docutils literal"><span class="pre">pactolus.score_frag_dag.HIT_TABLE_DTYPE</span></code></a> ). <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.make_pactolus_hit_table" title="pactolus.score_frag_dag.make_pactolus_hit_table"><code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.make_pactolus_hit_table()</span></code></a> uses <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.crossref_to_db" title="pactolus.score_frag_dag.crossref_to_db"><code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.crossref_to_db()</span></code></a> to cross-reference pactolus fragmentation trees (which are identified by inchi-keys) agains the molecular
+data base file to retrieve real molecule names. An example molecular database file is available, e.g,
+from <a class="reference external" href="http://midas-omicsbio.ornl.gov/MetaCyc.mdb">http://midas-omicsbio.ornl.gov/MetaCyc.mdb</a>. The
+main important parts in this case is the second column with the molecule name and the third column with
+the inchi key.</p>
+</li>
+</ol>
+</div></blockquote>
+</div>
+<div class="section" id="scoring-a-single-spectrum-against-a-single-tree">
+<h3>Scoring a single spectrum against a single tree<a class="headerlink" href="#scoring-a-single-spectrum-against-a-single-tree" title="Permalink to this headline">¶</a></h3>
+<p>The function <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.calculate_MIDAS_score" title="pactolus.score_frag_dag.calculate_MIDAS_score"><code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.calculate_MIDAS_score()</span></code></a> is used to score a single spectrum against a single tree.</p>
+</div>
+<div class="section" id="computing-the-matched-atoms">
+<h3>Computing the matched atoms<a class="headerlink" href="#computing-the-matched-atoms" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dagcalculate_MIDAS_score.py()</span></code> function can optionally also return the extra
+matching matrix describing which peaks of the spectrum where found as which fragment (node) in the fragmentation tree.
+Using the match matrix we can then locate the atoms that were matched as follows:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Open the HDF5 file with the fragmentation tree and retrieve the tree array</li>
+<li>Look up the fragment in the tree&#8212;each fragment is an index in the structured numpy array using 0-based indexing</li>
+<li>Retrieve the <code class="docutils literal"><span class="pre">atom_bool_arr</span></code> (or first column) of the fragment entry. The <code class="docutils literal"><span class="pre">atom_bool_arr</span></code> is an array of boolean values describing for each atim of the whole molecule whether it is part of the fragment.</li>
+</ol>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="scoring-spectra-against-spectra">
+<h2>Scoring spectra against spectra<a class="headerlink" href="#scoring-spectra-against-spectra" title="Permalink to this headline">¶</a></h2>
+<p>For many analyses it is useful to compare specta based on their L1 or L2 norm.
+In practice, however, mass spectra are commonly centroided&#8212;i.e., each peak is describe by a single (<code class="docutils literal"><span class="pre">m/z</span></code>, <code class="docutils literal"><span class="pre">intensity</span></code>)
+pair&#8212;and Pactolus assumes centroided spectra for scoring. Computing the distance between centroided spectra is
+complicated since the m/z values of matching peaks are often slightly shifted between spectra. The Pactolus module
+<code class="xref py py-mod docutils literal"><span class="pre">pactolus.score_sepctra</span></code> provides a series of functions to compute the fuzzy distance between centroided spectra,
+while accounting for mass tolerance (i.e, shifts in <code class="docutils literal"><span class="pre">m/z</span></code>) and noise (via <code class="docutils literal"><span class="pre">intensity</span></code> thresholds).</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pactolus.html" class="btn btn-neutral float-right" title="pactolus Package" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Welcome to Pactolus’s documentation!" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Curt R. Fischer, Oliver Ruebel, and Benjamin P. Bowen.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

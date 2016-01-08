@@ -1,0 +1,762 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pactolus.generate_frag_dag &mdash; Pactolus 0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Pactolus 0.1 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Pactolus
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Pactolus</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      
+    <li>pactolus.generate_frag_dag</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pactolus.generate_frag_dag</h1><div class="highlight"><pre>
+<span class="c">#!python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Generate fragmentation trees for molecules.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__authors__</span> <span class="o">=</span> <span class="s">&#39;Curt R. Fischer, Oliver Ruebel, Benjamin P. Bowen&#39;</span>
+<span class="n">__copyright__</span> <span class="o">=</span> <span class="s">&#39;Lawrence Berkeley National Laboratory and Authors, 2015.  All rights currently reserved.&#39;</span>
+
+
+
+<span class="c"># standard library</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span><span class="p">,</span> <span class="n">combinations</span><span class="p">,</span> <span class="n">repeat</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">choice</span>
+<span class="kn">from</span> <span class="nn">string</span> <span class="kn">import</span> <span class="n">lowercase</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+
+<span class="c"># other common libraries</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+
+<span class="c"># numpy</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="c"># rdkit</span>
+<span class="kn">from</span> <span class="nn">rdkit</span> <span class="kn">import</span> <span class="n">Chem</span>
+<span class="kn">from</span> <span class="nn">rdkit.Chem.rdmolops</span> <span class="kn">import</span> <span class="n">GetFormalCharge</span>
+
+<span class="c"># h5py</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+
+<span class="c"># parallelization</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="c"># Try to import the mpi_helper from the local install of BASTet</span>
+    <span class="kn">import</span> <span class="nn">omsi.shared.mpi_helper</span> <span class="kn">as</span> <span class="nn">mpi_helper</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c"># Try to import the mpi_helper version installed as a third_party package with Pactolus</span>
+        <span class="kn">import</span> <span class="nn">pactolus.third_party.mpi_helper</span> <span class="kn">as</span> <span class="nn">mpi_helper</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;MPI IMPORT FAILED. RUNNING IN SERIAL.&quot;</span>
+        <span class="k">class</span> <span class="nc">mpi_helper</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Dummy mpi_helper class used to ensure that the code works</span>
+<span class="sd">            in serial even if the mpi_helper cannot be imported</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="n">MPI_AVAILABLE</span> <span class="o">=</span> <span class="bp">False</span>
+
+            <span class="nd">@staticmethod</span>
+            <span class="k">def</span> <span class="nf">get_rank</span><span class="p">():</span>
+                <span class="k">return</span> <span class="mi">0</span>
+
+
+<div class="viewcode-block" id="RawDescriptionDefaultHelpArgParseFormatter"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.RawDescriptionDefaultHelpArgParseFormatter">[docs]</a><span class="k">class</span> <span class="nc">RawDescriptionDefaultHelpArgParseFormatter</span><span class="p">(</span><span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentDefaultsHelpFormatter</span><span class="p">,</span>
+                                                 <span class="n">argparse</span><span class="o">.</span><span class="n">RawDescriptionHelpFormatter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Simple derived formatter class for use with argparse</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+
+</div>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">----------------</span>
+<span class="sd">HELPER FUNCTIONS</span>
+<span class="sd">----------------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="nonprefix_combinations"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.nonprefix_combinations">[docs]</a><span class="k">def</span> <span class="nf">nonprefix_combinations</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">max_len</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create list of tuples of sorted integers of length 1 to max_len while</span>
+<span class="sd">    excluding tuples that are a prefix of another tuple.</span>
+
+<span class="sd">    :param iterable:</span>
+<span class="sd">    :param max_len: Maximum tuple length</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># http://stackoverflow.com/a/31282125/4480692</span>
+    <span class="n">iterable</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">iterable</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">iterable</span> <span class="ow">and</span> <span class="n">max_len</span><span class="p">):</span>
+        <span class="k">return</span>
+    <span class="k">for</span> <span class="n">comb</span> <span class="ow">in</span> <span class="n">combinations</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">max_len</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">comb</span>
+    <span class="k">for</span> <span class="n">length</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">max_len</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">comb</span> <span class="ow">in</span> <span class="n">combinations</span><span class="p">(</span><span class="n">iterable</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">length</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">comb</span> <span class="o">+</span> <span class="p">(</span><span class="n">iterable</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],)</span>
+
+</div>
+<div class="viewcode-block" id="remove_bonds"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.remove_bonds">[docs]</a><span class="k">def</span> <span class="nf">remove_bonds</span><span class="p">(</span><span class="n">rw_mol</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">bond_indices</span><span class="p">,</span> <span class="n">undo</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function that modifies in place a rdkit.Chem.rdchem.RWMol object by removing bonds.</span>
+
+<span class="sd">    Useful because RWMol.RemoveBond() method annoyingly takes beginning and ending atom indices,</span>
+<span class="sd">    not bond indices, and also because there is no RWMol.RemoveBonds() vectorized version.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bonds</span> <span class="o">=</span> <span class="p">[</span><span class="n">mol</span><span class="o">.</span><span class="n">GetBondWithIdx</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">bond_indices</span><span class="p">]</span>
+    <span class="n">bond_atom_indices</span> <span class="o">=</span> <span class="p">[(</span><span class="n">bond</span><span class="o">.</span><span class="n">GetBeginAtomIdx</span><span class="p">(),</span> <span class="n">bond</span><span class="o">.</span><span class="n">GetEndAtomIdx</span><span class="p">())</span> <span class="k">for</span> <span class="n">bond</span> <span class="ow">in</span> <span class="n">bonds</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">undo</span><span class="p">:</span>
+        <span class="p">[</span><span class="n">rw_mol</span><span class="o">.</span><span class="n">RemoveBond</span><span class="p">(</span><span class="n">atoms</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">atoms</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">atoms</span> <span class="ow">in</span> <span class="n">bond_atom_indices</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="p">[</span><span class="n">rw_mol</span><span class="o">.</span><span class="n">AddBond</span><span class="p">(</span><span class="n">atoms</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">atoms</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">atoms</span> <span class="ow">in</span> <span class="n">bond_atom_indices</span><span class="p">]</span>
+    <span class="k">return</span>
+
+</div>
+<div class="viewcode-block" id="randomword"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.randomword">[docs]</a><span class="k">def</span> <span class="nf">randomword</span><span class="p">(</span><span class="n">length</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates a random string of lowercase alphabetic characters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">choice</span><span class="p">(</span><span class="n">lowercase</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">length</span><span class="p">))</span>
+
+</div>
+<div class="viewcode-block" id="get_isotope_dict"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.get_isotope_dict">[docs]</a><span class="k">def</span> <span class="nf">get_isotope_dict</span><span class="p">(</span><span class="n">isostope_file</span><span class="o">=</span><span class="s">&#39;../data/max_abundance_isotopes.csv&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns isotope_dict (element symbols (strings) are keys and mass numbers (ints) are values) by reading a file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">isotope_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">isostope_file</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">csvfile</span><span class="p">:</span>
+            <span class="n">file_contents</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">csvfile</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">file_contents</span><span class="p">:</span>
+                <span class="n">el</span><span class="p">,</span> <span class="n">mass_number</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="n">isotope_dict</span><span class="p">[</span><span class="n">el</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mass_number</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">isotope_dict</span>
+        <span class="k">return</span> <span class="n">isotope_dict</span>
+    <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;&quot;&quot;</span>
+<span class="s">                        A &#39;max_abundance_isotopes.csv&#39;  file must be present in this directory;</span>
+<span class="s">                        (or you can pass in your own isotope_dict manually from within python).</span>
+<span class="s">                        &quot;&quot;&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&quot;&quot;&quot;</span>
+<span class="s">                           Could not properly construct isotope_dict, check contents of</span>
+<span class="s">                           &#39;max_abundance_isotopes.csv&#39;</span>
+<span class="s">                           &quot;&quot;&quot;</span><span class="p">)</span>
+
+</div>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">-----------------------------</span>
+<span class="sd">PRIMARY FUNCTIONS AND CLASSES</span>
+<span class="sd">-----------------------------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="FragTree"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.FragTree">[docs]</a><span class="k">class</span> <span class="nc">FragTree</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class to represent fragmentation trees of rdkit.Chem.rdchem.Mol objects.</span>
+
+<span class="sd">    Note that bonds broken come from self.mol, while calculation of correct monoisotopic</span>
+<span class="sd">    masses requires self.molH. Thus, functionality of this code requires that Chem.AddHs()</span>
+<span class="sd">    maintains bond and atom indices between mol and molH.  For all cases checked by the authors,</span>
+<span class="sd">    this is true.</span>
+
+<span class="sd">    :param mol: rdkit.Chem.rdchem.Mol object, the parent molecule of the fragmentation tree</span>
+<span class="sd">                this molecule must (i) be fully connected by covalent bonds and</span>
+<span class="sd">                (ii) have only _implicit_ hydrogens</span>
+<span class="sd">    :param molH: rdkit.Chem.rdchem.Mol object, a version of mol with but with explicit hydrogens</span>
+<span class="sd">    :param atom_masses: list of floats, the mass of each atom in molecule, stored outside rdkit for speed</span>
+<span class="sd">    :param breakable_bonds: list of ints, indices of bonds which should be broken during tree formation</span>
+<span class="sd">    :param isotope_dict: dictionary with element symbols as keys and mass numbers as values</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">isotope_dict</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a fragmentation tree for a given rdkit.Chem.rdchem.Mol object.</span>
+
+<span class="sd">        :param mol: rdkit.Chem.rdchem.Mol object, the parent molecule of the fragmentation tree</span>
+<span class="sd">                    this molecule must (i) be fully connected by covalent bonds and</span>
+<span class="sd">                    (ii) have only _implicit_ hydrogens</span>
+<span class="sd">        :param isotope_dict: dictionary with element symbols as keys and mass numbers (ints) as values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># perform checks on integrity of input molecule</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Chem</span><span class="o">.</span><span class="n">GetMolFrags</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">sanitizeFrags</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">asMols</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Molecule must be fully connected by covalent bonds.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">Chem</span><span class="o">.</span><span class="n">RemoveHs</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span><span class="o">.</span><span class="n">GetNumAtoms</span><span class="p">()</span> <span class="o">!=</span> <span class="n">mol</span><span class="o">.</span><span class="n">GetNumAtoms</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Molecule must have only implicit H atoms.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">GetFormalCharge</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Molecule must have overall neutral charge.&#39;</span><span class="p">)</span>
+
+        <span class="c"># begin initialization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mol</span> <span class="o">=</span> <span class="n">mol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">isotope_dict</span> <span class="o">=</span> <span class="n">isotope_dict</span>
+
+        <span class="c"># set isotopes according to the supplied isotope dictionary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_isotopes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">)</span>
+
+        <span class="c"># fill hydrogens and set isotopes in H&#39;ed molecule</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">molH</span> <span class="o">=</span> <span class="n">Chem</span><span class="o">.</span><span class="n">AddHs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_isotopes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">molH</span><span class="p">)</span>
+
+        <span class="c"># to speed calculation of monoisotopic masses, store each atom&#39;s mass outside of rdkit</span>
+        <span class="n">root_atoms</span> <span class="o">=</span> <span class="p">[</span><span class="n">atom</span><span class="o">.</span><span class="n">GetIdx</span><span class="p">()</span> <span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">molH</span><span class="o">.</span><span class="n">GetAtoms</span><span class="p">()]</span>
+        <span class="n">root_bonds</span> <span class="o">=</span> <span class="p">[</span><span class="n">bond</span><span class="o">.</span><span class="n">GetIdx</span><span class="p">()</span> <span class="k">for</span> <span class="n">bond</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="o">.</span><span class="n">GetBonds</span><span class="p">()]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">atom_masses</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">molH</span><span class="o">.</span><span class="n">GetAtomWithIdx</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">GetMass</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">root_atoms</span><span class="p">]</span>
+
+        <span class="c"># store number of bonds and atoms</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_atoms</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">root_atoms</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_bonds</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">root_bonds</span><span class="p">)</span>
+
+        <span class="c"># make the fragmentation tree (as a dictionary)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span> <span class="o">=</span> <span class="n">max_depth</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fragment_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_fragment_dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotate_fragments</span><span class="p">()</span>
+
+        <span class="c"># store length of tree</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_frags</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment_dict</span><span class="p">)</span>
+
+        <span class="c"># convert to numpy / binary for archival and rapid search</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">numpy_tree</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convert_dict_to_numpy</span><span class="p">()</span>
+
+<div class="viewcode-block" id="FragTree.set_isotopes"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.FragTree.set_isotopes">[docs]</a>    <span class="k">def</span> <span class="nf">set_isotopes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Modifies in place the isotope property of all atoms in a molecule, according to the supplied dictionary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="p">[</span><span class="n">atom</span><span class="o">.</span><span class="n">SetIsotope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">isotope_dict</span><span class="p">[</span><span class="n">atom</span><span class="o">.</span><span class="n">GetSymbol</span><span class="p">()])</span> <span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">mol</span><span class="o">.</span><span class="n">GetAtoms</span><span class="p">()]</span>
+        <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="FragTree.calculate_monoisotopic_mass"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.FragTree.calculate_monoisotopic_mass">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_monoisotopic_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atom_indices</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the monoisotopic mass of a subset of atoms in self.molH from a list of atom indices.</span>
+
+<span class="sd">        :param atom_indices: a list of unique integers, indices of the atoms that are in the fragment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atom_masses</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">atom_indices</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="FragTree.make_fragment_dict"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.FragTree.make_fragment_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_fragment_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Uses an iterable to compute all nodes of a fragmentation tree, but without retaining parent/child info.</span>
+
+<span class="sd">        This function is used modify self.fragment_dict in place in the ``__init__`` constructor</span>
+
+<span class="sd">        :returns:  fragment_dict ; Python dict with</span>
+
+<span class="sd">            **keys**:   (sorted) tuple of atom indices in the fragment</span>
+
+<span class="sd">            **values**: Python dict with</span>
+
+<span class="sd">                    * **keys**: &#39;path&#39;</span>
+<span class="sd">                    * **values**: (sorted) tuple of unique shortest bond breakage path giving rise to fragment</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bond_sets</span> <span class="o">=</span> <span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">combinations</span><span class="p">(</span><span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_bonds</span><span class="p">),</span> <span class="n">depth</span><span class="p">)</span>
+                                        <span class="k">for</span> <span class="n">depth</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">fragment_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">wm</span> <span class="o">=</span> <span class="n">Chem</span><span class="o">.</span><span class="n">RWMol</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">molH</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">bond_set</span> <span class="ow">in</span> <span class="n">bond_sets</span><span class="p">:</span>
+            <span class="c"># Remove bonds from H&#39;ed molecule</span>
+            <span class="n">remove_bonds</span><span class="p">(</span><span class="n">wm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">,</span> <span class="n">bond_set</span><span class="p">)</span>
+
+            <span class="c"># Get a list of atom sets: tuples with each tuple containing indices for atoms in each fragment</span>
+            <span class="n">frag_atoms_list</span> <span class="o">=</span> <span class="n">Chem</span><span class="o">.</span><span class="n">GetMolFrags</span><span class="p">(</span><span class="n">wm</span><span class="p">,</span> <span class="n">sanitizeFrags</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">asMols</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+            <span class="c"># store a fragment and bond breakage path in the dictionary if it is (a) not there already or</span>
+            <span class="c"># (b) the bond breakage path that generates the fragment is shorter than the one previously added</span>
+            <span class="n">fragment_dict</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">atoms</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;path&#39;</span><span class="p">:</span> <span class="n">bonds</span><span class="p">}</span>
+                                  <span class="k">for</span> <span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="n">bonds</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">frag_atoms_list</span><span class="p">,</span> <span class="n">repeat</span><span class="p">(</span><span class="n">bond_set</span><span class="p">))</span>
+                                  <span class="k">if</span> <span class="n">atoms</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">fragment_dict</span>
+                                  <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">fragment_dict</span><span class="p">[</span><span class="n">atoms</span><span class="p">])</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">bonds</span><span class="p">)})</span>
+
+            <span class="c"># Restore broken bonds</span>
+            <span class="n">remove_bonds</span><span class="p">(</span><span class="n">wm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">,</span> <span class="n">bond_set</span><span class="p">,</span> <span class="n">undo</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fragment_dict</span>
+</div>
+<div class="viewcode-block" id="FragTree.annotate_fragments"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.FragTree.annotate_fragments">[docs]</a>    <span class="k">def</span> <span class="nf">annotate_fragments</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Modify self.fragment_dict in place, adding info on  the parent nodes and monoisotopic masses of fragments.</span>
+
+<span class="sd">        :return: `fragment_dict`, which is a Python `dict` with:</span>
+
+<span class="sd">            * `keys`:   (sorted) tuple of atom indices in the fragment</span>
+<span class="sd">            * `values`: dict with the following keys: values:</span>
+
+<span class="sd">                * ``path``:   (sorted) tuple of unique shortest bond breakage path giving rise to fragment</span>
+<span class="sd">                * ``parent``: the &#39;path&#39; of the parent node</span>
+<span class="sd">                * ``mass`` :  the monoisotopic mass of the fragment</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">fragment</span><span class="p">,</span> <span class="n">frag_data</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment_dict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="c"># Add mass</span>
+            <span class="n">frag_data</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_monoisotopic_mass</span><span class="p">(</span><span class="n">fragment</span><span class="p">)</span>
+
+            <span class="c"># Add parent nodes</span>
+            <span class="n">parent_path</span> <span class="o">=</span> <span class="n">frag_data</span><span class="p">[</span><span class="s">&#39;path&#39;</span><span class="p">]</span>
+            <span class="c"># The parent is a prefix subset of the node&#39;s bond breakage path.</span>
+            <span class="c"># We test prefix subsets in decreasing length order.</span>
+            <span class="c"># For linear bonds, the first prefix subset always results in a hit.</span>
+            <span class="c"># For ring bonds, the parent may arise from a more truncated subset</span>
+            <span class="c">#    b/c multiple bonds must break to release the fragment.</span>
+            <span class="k">while</span> <span class="n">parent_path</span><span class="p">:</span>
+                <span class="n">candidate_parents</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fragment_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                                     <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;path&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">parent_path</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                                     <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">fragment</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">key</span><span class="p">))]</span>
+                <span class="k">if</span> <span class="n">candidate_parents</span><span class="p">:</span>
+                    <span class="n">frag_data</span><span class="p">[</span><span class="s">&#39;parent&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">candidate_parents</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">parent_path</span> <span class="o">=</span> <span class="n">parent_path</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">continue</span>
+
+        <span class="c"># set the parent of the root node</span>
+        <span class="n">all_atoms</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_atoms</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fragment_dict</span><span class="p">[</span><span class="n">all_atoms</span><span class="p">][</span><span class="s">&#39;parent&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="FragTree.convert_dict_to_numpy"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.FragTree.convert_dict_to_numpy">[docs]</a>    <span class="k">def</span> <span class="nf">convert_dict_to_numpy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert a fragment dict to mass-sorted numpy format for fast and easy searching, scoring, and storage.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Sort dictionary by mass (this simplifies parent reference by index vs. sorting later)</span>
+        <span class="n">ordered_frag_dict</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fragment_dict</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s">&#39;mass&#39;</span><span class="p">]))</span>
+
+        <span class="c"># Define output dtype</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&#39;atom_bool_arr&#39;</span><span class="p">,</span> <span class="s">&#39;b1&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_atoms</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s">&#39;bond_bool_arr&#39;</span><span class="p">,</span> <span class="s">&#39;b1&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_bonds</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s">&#39;mass_vec&#39;</span><span class="p">,</span> <span class="s">&#39;f8&#39;</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s">&#39;parent_vec&#39;</span><span class="p">,</span> <span class="s">&#39;i8&#39;</span><span class="p">),</span> <span class="p">]</span>
+
+        <span class="n">atom_idxs</span><span class="p">,</span> <span class="n">bond_idxs</span> <span class="o">=</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_atoms</span><span class="p">),</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_bonds</span><span class="p">)</span>
+
+        <span class="c"># atom_bool_arr must be iterated over separately and first b/c filling parent_vec requires it</span>
+        <span class="c"># atom_bool_arr[i, j] is True if atom j is in fragment i</span>
+        <span class="n">atom_bool_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">i</span> <span class="ow">in</span> <span class="n">key</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">atom_idxs</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">ordered_frag_dict</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+        <span class="c"># initialize and fill other arrays / vectors</span>
+        <span class="c"># bond_bool_arr[i, j] is True if bond j must be broken to generate fragment i</span>
+        <span class="n">bond_bool_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_frags</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_bonds</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">mass_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_frags</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">parent_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_frags</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ordered_frag_dict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()):</span>
+            <span class="n">bond_bool_arr</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="ow">in</span> <span class="n">val</span><span class="p">[</span><span class="s">&#39;path&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">bond_idxs</span><span class="p">]</span>
+            <span class="n">mass_vec</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">parent_vec</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span><span class="p">[</span><span class="s">&#39;parent&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">ordered_frag_dict</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="c"># The root will have None as a parent which is not a valid dict key</span>
+                <span class="n">parent_vec</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="c"># fill numpy structured array by column</span>
+        <span class="n">numpy_tree</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_frags</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">numpy_tree</span><span class="p">[</span><span class="s">&#39;atom_bool_arr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">atom_bool_arr</span>
+        <span class="n">numpy_tree</span><span class="p">[</span><span class="s">&#39;bond_bool_arr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bond_bool_arr</span>
+        <span class="n">numpy_tree</span><span class="p">[</span><span class="s">&#39;mass_vec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mass_vec</span>
+        <span class="n">numpy_tree</span><span class="p">[</span><span class="s">&#39;parent_vec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parent_vec</span>
+        <span class="k">return</span> <span class="n">numpy_tree</span>
+
+</div></div>
+<div class="viewcode-block" id="FragTreeLibrary"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.FragTreeLibrary">[docs]</a><span class="k">class</span> <span class="nc">FragTreeLibrary</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class to make sets of FragTree objects from a file with a list of InChIs and store results in hdf5.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># TODO: use logging module ?</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_params</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">,</span> <span class="n">isotope_dict</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param file_params:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_inchi_file</span> <span class="o">=</span> <span class="n">file_params</span><span class="p">[</span><span class="s">&#39;input_inchi_file&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_hdf5_file_base</span> <span class="o">=</span> <span class="n">file_params</span><span class="p">[</span><span class="s">&#39;output_hdf5_file_base&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_error_log</span> <span class="o">=</span> <span class="n">file_params</span><span class="p">[</span><span class="s">&#39;output_error_log&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_directory</span> <span class="o">=</span> <span class="n">file_params</span><span class="p">[</span><span class="s">&#39;output_directory&#39;</span><span class="p">]</span>
+
+        <span class="c"># Make output directory if it does not exist</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_directory</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_directory</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                <span class="c"># When executed in parallel it is possible that another rank already created the dir</span>
+                <span class="c"># in the meantime. We can safely ignore this error.</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_directory</span><span class="p">):</span>
+                    <span class="k">pass</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span>
+
+        <span class="c"># Get isotope dictionary (if none was provided)</span>
+        <span class="k">if</span> <span class="n">isotope_dict</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">isotope_dict</span> <span class="o">=</span> <span class="n">get_isotope_dict</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">isotope_dict</span> <span class="o">=</span> <span class="n">isotope_dict</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span> <span class="o">=</span> <span class="n">max_depth</span>
+
+        <span class="c"># make list of inchis</span>
+        <span class="n">inchi_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_inchi_file</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">inchi_file</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">inchi_file</span><span class="p">:</span>
+                <span class="n">inchi_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">assert</span> <span class="n">inchi_list</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inchi_list</span> <span class="o">=</span> <span class="n">inchi_list</span>
+
+        <span class="c"># ensure any pre-existing output logs are overwritten</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_error_log</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">_</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="c"># execute in parallel if possible</span>
+        <span class="k">if</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">MPI_AVAILABLE</span> <span class="ow">and</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">get_size</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">scheduler</span> <span class="o">=</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">parallel_over_axes</span><span class="p">(</span>
+                <span class="n">task_function</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grow_tree_from_inchi</span><span class="p">,</span>
+                <span class="n">task_function_params</span><span class="o">=</span><span class="p">{},</span>
+                <span class="n">main_data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">inchi_list</span><span class="p">)),</span>  <span class="c"># FIXME Why are there duplicates in the inchi list</span>
+                <span class="n">split_axes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">],</span>
+                <span class="n">main_data_param_name</span><span class="o">=</span><span class="s">&#39;inchi&#39;</span><span class="p">,</span>
+                <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="n">schedule</span><span class="o">=</span><span class="n">mpi_helper</span><span class="o">.</span><span class="n">parallel_over_axes</span><span class="o">.</span><span class="n">SCHEDULES</span><span class="p">[</span><span class="s">&#39;DYNAMIC&#39;</span><span class="p">],</span>
+                <span class="n">comm</span><span class="o">=</span><span class="n">mpi_helper</span><span class="o">.</span><span class="n">get_comm_world</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="n">_</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">inchi</span> <span class="ow">in</span> <span class="n">inchi_list</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">grow_tree_from_inchi</span><span class="p">(</span><span class="n">inchi</span><span class="p">)</span>
+
+        <span class="k">return</span>
+
+<div class="viewcode-block" id="FragTreeLibrary.grow_tree_from_inchi"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.FragTreeLibrary.grow_tree_from_inchi">[docs]</a>    <span class="k">def</span> <span class="nf">grow_tree_from_inchi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inchi</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Makes a FragTree from an InChI string; this is desiged to be parallizable over molecules by mpi.</span>
+
+<span class="sd">        :param: inchi, string, an InChI string for a molecule</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># make fragmentation tree for each inchi</span>
+        <span class="n">mol</span> <span class="o">=</span> <span class="n">Chem</span><span class="o">.</span><span class="n">MolFromInchi</span><span class="p">(</span><span class="n">inchi</span><span class="p">)</span>
+
+        <span class="n">file_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_hdf5_file_base</span> <span class="o">+</span> <span class="s">&#39;_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;_&#39;</span> <span class="o">+</span> <span class="n">Chem</span><span class="o">.</span><span class="n">InchiToInchiKey</span><span class="p">(</span><span class="n">inchi</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;.h5&#39;</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_directory</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span>
+
+        <span class="c"># check for existence of file and ignore if complete</span>
+        <span class="c"># TODO: check whether max_depth used &gt;= current max_depth before skipping (instead of just an implicit !=)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&#39;SKIPPING FragTree for Molecule </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">inchi</span><span class="p">,)</span>
+            <span class="k">return</span>
+
+        <span class="c"># Check for success of InChI conversion</span>
+        <span class="k">if</span> <span class="n">mol</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_error_log</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">log_file</span><span class="p">:</span>
+                <span class="n">log_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> was not parsed by RDKit.  Is it valid InChI?</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">inchi</span><span class="p">)</span>
+                <span class="k">print</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> was not parsed by RDKit.  Is it valid InChI?</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">inchi</span>
+            <span class="k">return</span>
+
+        <span class="c"># Try to make the tree and if successful, record time it takes</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+            <span class="n">mol_tree</span> <span class="o">=</span> <span class="n">FragTree</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span><span class="p">,</span> <span class="n">isotope_dict</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">isotope_dict</span><span class="p">)</span>
+            <span class="n">stop</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+            <span class="k">print</span> <span class="s">&#39;FragTree for Molecule </span><span class="si">%s</span><span class="s"> made in </span><span class="si">%s</span><span class="s"> seconds&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">inchi</span><span class="p">,</span> <span class="n">stop</span><span class="o">-</span><span class="n">start</span><span class="p">)</span>
+
+            <span class="c"># Output results to hdf5 file</span>
+            <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">inchi_key</span> <span class="o">=</span> <span class="n">Chem</span><span class="o">.</span><span class="n">InchiToInchiKey</span><span class="p">(</span><span class="n">inchi</span><span class="p">)</span>
+                <span class="n">hdf5_group</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="n">inchi_key</span><span class="p">)</span>
+                <span class="n">dset_name</span> <span class="o">=</span> <span class="s">&#39;FragTree_at_max_depth=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span>
+                <span class="n">hdf5_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">dset_name</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">mol_tree</span><span class="o">.</span><span class="n">numpy_tree</span><span class="p">)</span>
+
+                <span class="c"># set attributes</span>
+                <span class="n">hdf5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;inchi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inchi</span>
+                <span class="n">hdf5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;num_atoms&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mol_tree</span><span class="o">.</span><span class="n">num_atoms</span>
+                <span class="n">hdf5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;num_bonds&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mol_tree</span><span class="o">.</span><span class="n">num_bonds</span>
+                <span class="n">hdf5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;num_fragments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mol_tree</span><span class="o">.</span><span class="n">num_frags</span>
+                <span class="n">hdf5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;max_depth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mol_tree</span><span class="o">.</span><span class="n">max_depth</span>
+                <span class="n">hdf5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;time_to_build&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stop</span> <span class="o">-</span> <span class="n">start</span>
+
+        <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">bad_mol_err</span><span class="p">:</span>
+            <span class="k">print</span> <span class="n">bad_mol_err</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_error_log</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">log_file</span><span class="p">:</span>
+                <span class="n">log_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;InChI </span><span class="si">%s</span><span class="s"> gave an error </span><span class="si">%s</span><span class="s">: </span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">inchi</span><span class="p">,</span> <span class="n">bad_mol_err</span><span class="o">.</span><span class="n">message</span><span class="p">))</span>
+        <span class="k">return</span>
+
+</div></div>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">----------------</span>
+<span class="sd">COMMAND LINE USAGE</span>
+<span class="sd">----------------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="command_line_params"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.command_line_params">[docs]</a><span class="k">def</span> <span class="nf">command_line_params</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Setup and parse the command line parameters</span>
+
+<span class="sd">    :return: dict with command line parameters</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                     <span class="n">formatter_class</span><span class="o">=</span><span class="n">RawDescriptionDefaultHelpArgParseFormatter</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--inchi_file&quot;</span><span class="p">,</span> <span class="s">&#39;-inchi&#39;</span><span class="p">,</span>
+                        <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="s">&#39;test_FragTreeLibrary_inchis.txt&#39;</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                        <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;Text file with the inchi string of the molecules to be processed.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--output_base_name&quot;</span><span class="p">,</span> <span class="s">&#39;-of&#39;</span><span class="p">,</span>
+                        <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="s">&#39;FragTreeLibrary_test_hdf5&#39;</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                        <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;Base name of the output file(s)&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--output_dir&quot;</span><span class="p">,</span> <span class="s">&#39;-od&#39;</span><span class="p">,</span>
+                        <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="s">&#39;results&#39;</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                        <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;Directory where the results should be stored.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--error_log&quot;</span><span class="p">,</span> <span class="s">&#39;-el&#39;</span><span class="p">,</span>
+                        <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="s">&#39;FragTreeLibrary_test_log.txt&#39;</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                        <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&quot;Name of the output error log file&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--isotope_file&quot;</span><span class="p">,</span> <span class="s">&#39;-iso&#39;</span><span class="p">,</span>
+                        <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="s">&#39;../data/max_abundance_isotopes.csv&#39;</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                        <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&quot;Text file with the maximum abundant isotopes. &quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--max_depth&quot;</span><span class="p">,</span> <span class="s">&quot;-md&quot;</span><span class="p">,</span>
+                        <span class="n">action</span><span class="o">=</span><span class="s">&quot;store&quot;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                        <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&quot;Integer indicting the maximum fragmentation depth.&quot;</span><span class="p">)</span>
+    <span class="c"># Add the command line help argument</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-h&#39;</span><span class="p">,</span> <span class="s">&#39;--help&#39;</span><span class="p">,</span>
+                        <span class="n">action</span><span class="o">=</span><span class="s">&#39;help&#39;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">SUPPRESS</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;show this help message and exit&#39;</span><span class="p">)</span>
+    <span class="c"># Parse the command line arguments and return the dict with the results</span>
+    <span class="k">return</span> <span class="nb">vars</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">())</span>
+
+</div>
+<div class="viewcode-block" id="print_arguments"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.print_arguments">[docs]</a><span class="k">def</span> <span class="nf">print_arguments</span><span class="p">(</span><span class="n">cl_params</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Print the settings from the dict with command line arguments</span>
+
+<span class="sd">    :param cl_params: Dict with the command line arguments</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">print</span> <span class="s">&quot;&quot;</span>
+    <span class="k">print</span> <span class="s">&quot;Settings:&quot;</span>
+    <span class="k">print</span> <span class="s">&quot;---------&quot;</span>
+    <span class="k">if</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">param_key</span><span class="p">,</span> <span class="n">param_val</span> <span class="ow">in</span> <span class="n">cl_params</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">print</span> <span class="nb">str</span><span class="p">(</span><span class="n">param_key</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot; = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">param_val</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;&quot;</span>
+
+</div>
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main function</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">))</span>
+
+    <span class="c"># Parse the command line arguments</span>
+    <span class="n">cl_params</span> <span class="o">=</span> <span class="n">command_line_params</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">print_arguments</span><span class="p">(</span><span class="n">cl_params</span><span class="p">)</span>
+
+    <span class="c"># Create the file parameter for the FragTreeLibrary</span>
+    <span class="n">file_params</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;input_inchi_file&#39;</span><span class="p">:</span> <span class="n">cl_params</span><span class="p">[</span><span class="s">&#39;inchi_file&#39;</span><span class="p">],</span>
+                   <span class="s">&#39;output_directory&#39;</span><span class="p">:</span> <span class="n">cl_params</span><span class="p">[</span><span class="s">&#39;output_dir&#39;</span><span class="p">],</span>
+                   <span class="s">&#39;output_hdf5_file_base&#39;</span><span class="p">:</span> <span class="n">cl_params</span><span class="p">[</span><span class="s">&#39;output_base_name&#39;</span><span class="p">],</span>
+                   <span class="s">&#39;output_error_log&#39;</span><span class="p">:</span> <span class="n">cl_params</span><span class="p">[</span><span class="s">&#39;error_log&#39;</span><span class="p">]}</span>
+
+    <span class="n">isotope_dict</span> <span class="o">=</span> <span class="n">get_isotope_dict</span><span class="p">(</span><span class="n">isostope_file</span><span class="o">=</span><span class="n">cl_params</span><span class="p">[</span><span class="s">&#39;isotope_file&#39;</span><span class="p">])</span>
+
+    <span class="c"># Generate the fragmentation tree</span>
+    <span class="n">FragTreeLibrary</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="n">cl_params</span><span class="p">[</span><span class="s">&#39;max_depth&#39;</span><span class="p">],</span> <span class="n">isotope_dict</span><span class="o">=</span><span class="n">isotope_dict</span><span class="p">,</span> <span class="n">file_params</span><span class="o">=</span><span class="n">file_params</span><span class="p">)</span>
+    <span class="k">return</span>
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Curt R. Fischer, Oliver Ruebel, and Benjamin P. Bowen.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
