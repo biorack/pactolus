@@ -1,5 +1,5 @@
 """
-COPYRIGHT: This module has been extracted from BASTet (Berkeley Analysis and Storage Toolkit).
+COPYRIGHT: This module has been extracted from BASTet (Berkeley Analysis and Storage Toolkit). (omsi/workflow/common.py)
 
 *** Copyright Notice ***
 
