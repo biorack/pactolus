@@ -234,6 +234,8 @@
 
 <span class="sd">    :param data_masses: numpy 1D array, float, *neutralized* m/z values of data from an MS2 or MSn scan</span>
 <span class="sd">    :param tree: numpy structured array as output by FragDag</span>
+<span class="sd">    :param mass_tol: precursore m/z mass tolerance</span>
+
 <span class="sd">    :return: matching_frag_sets, list of lists; len is same as data_mzs; sublists are idxs to rows of tree that match</span>
 <span class="sd">    :return: unique_matching_frags, numpy 1d array, a flattened numpy version of unique idxs in matching_frag_sets</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -491,7 +493,7 @@
 
     <span class="c"># Compute the shape the score cube should have when we return it</span>
     <span class="c"># Alternatively one could e.g. do tuple(list(spatial_dimensions) + [n_compounds,])</span>
-    <span class="n">score_cube_shape</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">((</span><span class="n">spatial_dimensions</span><span class="p">,</span> <span class="p">(</span><span class="n">n_compounds</span><span class="p">,))</span> <span class="p">,</span> <span class="p">())</span>
+    <span class="n">score_cube_shape</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">((</span><span class="n">spatial_dimensions</span><span class="p">,</span> <span class="p">(</span><span class="n">n_compounds</span><span class="p">,)),</span> <span class="p">())</span>
 
     <span class="k">if</span> <span class="n">want_match_matrix</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">score_cube</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">score_cube_shape</span><span class="p">),</span> <span class="n">match_matrix</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">score_cube_shape</span><span class="p">)</span>
@@ -598,7 +600,7 @@
         <span class="k">return</span> <span class="n">score_matrix</span>
 
 </div>
-<div class="viewcode-block" id="make_pactolus_hit_table"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.make_pactolus_hit_table">[docs]</a><span class="k">def</span> <span class="nf">make_pactolus_hit_table</span><span class="p">(</span><span class="n">pactolus_results</span><span class="p">,</span> <span class="n">table_file</span><span class="p">,</span> <span class="n">original_db</span><span class="p">,</span> <span class="n">return_list</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+<div class="viewcode-block" id="make_pactolus_hit_table"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.make_pactolus_hit_table">[docs]</a><span class="k">def</span> <span class="nf">make_pactolus_hit_table</span><span class="p">(</span><span class="n">pactolus_results</span><span class="p">,</span> <span class="n">table_file</span><span class="p">,</span> <span class="n">original_db</span><span class="p">,</span> <span class="n">match_matrix</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Makes a hit table in the same format as lbl-midas for comparison of the two algorithms</span>
 
@@ -607,7 +609,12 @@
 <span class="sd">                                            was used to generate pactolus results.  Or the numpy array directly.</span>
 <span class="sd">    :param original_db:     string,     full path to flat text file containing the molecule DB used to generate the</span>
 <span class="sd">                        fragmentation trees. The primary use for this is to enable lookup of molecule names.</span>
-<span class="sd">    :param return_list:     bool, whether to return a list of hit tables</span>
+<span class="sd">    :param match_matrix:     Optional input. List of lists of match matrices (one matrix per scan and hit).</span>
+<span class="sd">                              Each entry is a bool matrix with n_peaks columns and n_nodes rows. Elements are True</span>
+<span class="sd">                              if given peak matches given node of frag_dag. An entry will be None in case that</span>
+<span class="sd">                              the hit-score was 0. This is required to fill the number of peaks and matched peaks</span>
+<span class="sd">                              entries in the able. If not available then the values will be set to 0.</span>
+
 <span class="sd">    :return: hit_table_list, a list of hit_tables</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c"># transform pactolus results into hit table</span>
@@ -615,26 +622,32 @@
     <span class="n">db_arr</span> <span class="o">=</span> <span class="n">crossref_to_db</span><span class="p">(</span><span class="n">table_file</span><span class="p">,</span> <span class="n">original_db</span><span class="p">)</span>
 
     <span class="c"># return a list of hit_tables when pactolus_results is a score_list</span>
-    <span class="k">if</span> <span class="n">return_list</span><span class="p">:</span>
-        <span class="n">hit_table_list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">scores</span> <span class="ow">in</span> <span class="n">pactolus_results</span><span class="p">:</span>
-            <span class="n">num_nonzero</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
-            <span class="n">hit_table</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">num_nonzero</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">HIT_TABLE_DTYPE</span><span class="p">)</span>
-            <span class="n">order</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">argsort</span><span class="p">()[::</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="n">num_nonzero</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">hit_index</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">order</span><span class="p">):</span>
-                <span class="n">hit_table</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">hit_index</span><span class="p">],</span>
-                                  <span class="n">db_arr</span><span class="p">[</span><span class="s">&#39;metacyc_id&#39;</span><span class="p">][</span><span class="n">hit_index</span><span class="p">],</span>
-                                  <span class="n">db_arr</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">][</span><span class="n">hit_index</span><span class="p">],</span>
-                                  <span class="n">db_arr</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][</span><span class="n">hit_index</span><span class="p">],</span>
-                                  <span class="mi">0</span><span class="p">,</span>  <span class="c"># TODO is the number of peaks not set?</span>
-                                  <span class="mi">0</span><span class="p">,</span>  <span class="c"># TODO is the number of matched peaks not set?</span>
-                                  <span class="p">)</span>
-            <span class="n">hit_table_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hit_table</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">hit_table_list</span><span class="p">)</span> <span class="o">==</span> <span class="n">pactolus_results</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">hit_table_list</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">return_list</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
-        <span class="c"># TODO: implement</span>
+    <span class="n">hit_table_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">scan_index</span><span class="p">,</span> <span class="n">scores</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pactolus_results</span><span class="p">):</span>
+        <span class="n">num_nonzero</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+        <span class="n">hit_table</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">num_nonzero</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">HIT_TABLE_DTYPE</span><span class="p">)</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">argsort</span><span class="p">()[::</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="n">num_nonzero</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">hit_index</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">order</span><span class="p">):</span>
+            <span class="c"># Determine the number of peaks and number of matched peaks</span>
+            <span class="n">npeaks</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">nmatched_peaks</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">match_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">matches</span> <span class="o">=</span> <span class="n">match_matrix</span><span class="p">[</span><span class="n">scan_index</span><span class="p">][</span><span class="n">hit_index</span><span class="p">]</span>
+                <span class="c"># Since we only look at non-zero scores we should always have a match matrix but just be sure we check</span>
+                <span class="k">if</span> <span class="n">matches</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">npeaks</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">size</span>
+                    <span class="n">nmatched_peaks</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="c"># Compule the hittable entry</span>
+            <span class="n">hit_table</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">hit_index</span><span class="p">],</span>
+                              <span class="n">db_arr</span><span class="p">[</span><span class="s">&#39;metacyc_id&#39;</span><span class="p">][</span><span class="n">hit_index</span><span class="p">],</span>
+                              <span class="n">db_arr</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">][</span><span class="n">hit_index</span><span class="p">],</span>
+                              <span class="n">db_arr</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][</span><span class="n">hit_index</span><span class="p">],</span>
+                              <span class="n">npeaks</span><span class="p">,</span>
+                              <span class="n">nmatched_peaks</span><span class="p">,</span>
+                              <span class="p">)</span>
+        <span class="n">hit_table_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hit_table</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">hit_table_list</span><span class="p">)</span> <span class="o">==</span> <span class="n">pactolus_results</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">hit_table_list</span>
 
 </div>
 <div class="viewcode-block" id="crossref_to_db"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.crossref_to_db">[docs]</a><span class="k">def</span> <span class="nf">crossref_to_db</span><span class="p">(</span><span class="n">table_file</span><span class="p">,</span> <span class="n">original_db</span><span class="p">):</span>
@@ -666,7 +679,7 @@
                 <span class="n">mol</span> <span class="o">=</span> <span class="n">Chem</span><span class="o">.</span><span class="n">MolFromInchi</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
                 <span class="n">mass</span> <span class="o">=</span> <span class="n">CalcExactMolWt</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
             <span class="k">except</span><span class="p">:</span>
-                <span class="k">print</span> <span class="n">fields</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">mol</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">line</span>
+                <span class="k">print</span> <span class="n">fields</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">idx</span><span class="p">,</span> <span class="n">line</span>
                 <span class="k">raise</span> <span class="ne">TypeError</span>
             <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inchi_key</span><span class="p">)</span>
             <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mass</span><span class="p">)</span>

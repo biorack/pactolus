@@ -104,6 +104,8 @@ def find_matching_fragments(data_masses, tree, mass_tol):
 
     :param data_masses: numpy 1D array, float, *neutralized* m/z values of data from an MS2 or MSn scan
     :param tree: numpy structured array as output by FragDag
+    :param mass_tol: precursore m/z mass tolerance
+
     :return: matching_frag_sets, list of lists; len is same as data_mzs; sublists are idxs to rows of tree that match
     :return: unique_matching_frags, numpy 1d array, a flattened numpy version of unique idxs in matching_frag_sets
     """
@@ -361,7 +363,7 @@ def score_peakcube_against_trees(peakcube, peakmzs, ms1_mz, params, want_match_m
 
     # Compute the shape the score cube should have when we return it
     # Alternatively one could e.g. do tuple(list(spatial_dimensions) + [n_compounds,])
-    score_cube_shape = sum((spatial_dimensions, (n_compounds,)) , ())
+    score_cube_shape = sum((spatial_dimensions, (n_compounds,)), ())
 
     if want_match_matrix:
         return score_cube.reshape(score_cube_shape), match_matrix.reshape(score_cube_shape)
@@ -468,7 +470,7 @@ def score_scan_list_against_trees(scan_list, ms1_mz, params, want_match_matrix=F
         return score_matrix
 
 
-def make_pactolus_hit_table(pactolus_results, table_file, original_db, return_list=True):
+def make_pactolus_hit_table(pactolus_results, table_file, original_db, match_matrix=None):
     """
     Makes a hit table in the same format as lbl-midas for comparison of the two algorithms
 
@@ -477,7 +479,12 @@ def make_pactolus_hit_table(pactolus_results, table_file, original_db, return_li
                                             was used to generate pactolus results.  Or the numpy array directly.
     :param original_db:     string,     full path to flat text file containing the molecule DB used to generate the
                         fragmentation trees. The primary use for this is to enable lookup of molecule names.
-    :param return_list:     bool, whether to return a list of hit tables
+    :param match_matrix:     Optional input. List of lists of match matrices (one matrix per scan and hit).
+                              Each entry is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
+                              if given peak matches given node of frag_dag. An entry will be None in case that
+                              the hit-score was 0. This is required to fill the number of peaks and matched peaks
+                              entries in the able. If not available then the values will be set to 0.
+
     :return: hit_table_list, a list of hit_tables
     """
     # transform pactolus results into hit table
@@ -485,26 +492,32 @@ def make_pactolus_hit_table(pactolus_results, table_file, original_db, return_li
     db_arr = crossref_to_db(table_file, original_db)
 
     # return a list of hit_tables when pactolus_results is a score_list
-    if return_list:
-        hit_table_list = []
-        for scores in pactolus_results:
-            num_nonzero = np.count_nonzero(scores)
-            hit_table = np.zeros(shape=(num_nonzero), dtype=HIT_TABLE_DTYPE)
-            order = scores.argsort()[::-1][:num_nonzero]
-            for idx, hit_index in enumerate(order):
-                hit_table[idx] = (scores[hit_index],
-                                  db_arr['metacyc_id'][hit_index],
-                                  db_arr['name'][hit_index],
-                                  db_arr['mass'][hit_index],
-                                  0,  # TODO is the number of peaks not set?
-                                  0,  # TODO is the number of matched peaks not set?
-                                  )
-            hit_table_list.append(hit_table)
-        assert len(hit_table_list) == pactolus_results.shape[0]
-        return hit_table_list
-    if not return_list:
-        raise NotImplementedError
-        # TODO: implement
+    hit_table_list = []
+    for scan_index, scores in enumerate(pactolus_results):
+        num_nonzero = np.count_nonzero(scores)
+        hit_table = np.zeros(shape=(num_nonzero), dtype=HIT_TABLE_DTYPE)
+        order = scores.argsort()[::-1][:num_nonzero]
+        for idx, hit_index in enumerate(order):
+            # Determine the number of peaks and number of matched peaks
+            npeaks = 0
+            nmatched_peaks = 0
+            if match_matrix is not None:
+                matches = match_matrix[scan_index][hit_index]
+                # Since we only look at non-zero scores we should always have a match matrix but just be sure we check
+                if matches is not None:
+                    npeaks = matches.size
+                    nmatched_peaks = matches.sum()
+            # Compule the hittable entry
+            hit_table[idx] = (scores[hit_index],
+                              db_arr['metacyc_id'][hit_index],
+                              db_arr['name'][hit_index],
+                              db_arr['mass'][hit_index],
+                              npeaks,
+                              nmatched_peaks,
+                              )
+        hit_table_list.append(hit_table)
+    assert len(hit_table_list) == pactolus_results.shape[0]
+    return hit_table_list
 
 
 def crossref_to_db(table_file, original_db):
@@ -536,7 +549,7 @@ def crossref_to_db(table_file, original_db):
                 mol = Chem.MolFromInchi(fields[2])
                 mass = CalcExactMolWt(mol)
             except:
-                print fields[2], mol, idx, line
+                print fields[2], idx, line
                 raise TypeError
             fields.append(inchi_key)
             fields.append(mass)
