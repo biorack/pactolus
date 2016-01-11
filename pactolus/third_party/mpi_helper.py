@@ -3,7 +3,7 @@ Module used to ease the use of MPI and distributed parallel implementations usin
 """
 
 """
-COPYRIGHT: This module has been extracted from BASTet (Berkeley Analysis and Storage Toolkit).
+COPYRIGHT: This module has been extracted from BASTet (Berkeley Analysis and Storage Toolkit). (omsi/shared/mpi_helper.py)
 
 *** Copyright Notice ***
 
@@ -73,6 +73,11 @@ import itertools
 import warnings
 import time
 import os
+
+try:
+    from omsi.shared.log import log_helper
+except ImportError:
+    from pactolus.third_party.log import log_helper
 
 
 class parallel_over_axes(object):
@@ -169,7 +174,6 @@ class parallel_over_axes(object):
                for each task.
 
         """
-        from omsi.shared.log import log_helper
         start_time = time.time()
         self.__data_collected = False
         if self.schedule == self.SCHEDULES['DYNAMIC']:
@@ -204,7 +208,6 @@ class parallel_over_axes(object):
             containing the combined data of all  self.result and self.blocks from all ranks respectively.
 
         """
-        from omsi.shared.log import log_helper
         # If we have collected the data already then we don't need to do it again
         if self.__data_collected and not force_collect:
             return self.result, self.blocks
@@ -249,7 +252,6 @@ class parallel_over_axes(object):
                a range slice object along the axes used for decomposition.
 
         """
-        from omsi.shared.log import log_helper
         start_time = time.time()
         # Get MPI parameters
         rank = get_rank(comm=self.comm)
@@ -317,7 +319,6 @@ class parallel_over_axes(object):
                a range slice object along the axes used for decomposition.
 
         """
-        from omsi.shared.log import log_helper
         import time
         rank = get_rank(comm=self.comm)
         size = get_size(comm=self.comm)
@@ -516,40 +517,4 @@ def mpi_type_from_dtype(dtype):
             return None
     else:
         return None
-
-
-# class suppress_stdout_and_stderr(object):
-#     """
-#     Simple context manager that can be used to suppress the output to stdout and stderr.
-#
-#     To suppress the output for a set of calls use:
-#
-#     >>> with suppress_stdout_and_stderr():
-#     >>>     my_function(...)
-#
-#     """
-#
-#     def __init__(self):
-#         # Open a pair of null files
-#         self.null_out_files = {'stdout': os.open(os.devnull,os.O_RDWR),
-#                                'stderr': os.open(os.devnull,os.O_RDWR)}
-#         # Save the original output streams
-#         self.orginal_out_files = {'stdout': os.dup(1),
-#                                   'stderr': os.dup(2)}
-#
-#     def __enter__(self):
-#         # Suppress the output to stdout and stderr by assigning null-fiules to the outputs
-#         os.dup2(self.null_out_files['stdout'], 1)
-#         os.dup2(self.null_out_files['stderr'], 2)
-#
-#     def __exit__(self, *_):
-#         # Restore the stdout and stderr to the original function
-#         os.dup2(self.original_out_files['stdout'], 1)
-#         os.dup2(self.original_out_files['stderr'], 2)
-#         # Close the null files
-#         for nullfile in self.null_out_files.values():
-#             os.close(nullfile)
-#         self.null_out_files = {'stdout': None, 'stderr': None}
-
-
 
