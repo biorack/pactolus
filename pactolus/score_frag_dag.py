@@ -16,6 +16,10 @@ import numpy as np
 from scipy.stats import norm
 from scipy.sparse import csc_matrix
 
+# command line args
+import argparse
+from pactolus.third_party.argparse_helper import RawDescriptionDefaultHelpArgParseFormatter
+
 # rdkit for finding masses and inchi keys
 from rdkit import Chem
 from rdkit.Chem.rdMolDescriptors import CalcExactMolWt
@@ -257,7 +261,7 @@ def make_file_lookup_table_by_MS1_mass(tree_files=None, path=None, save_result=N
     return tree_files_by_ms1_mass[order]
 
 
-def score_peakcube_against_trees(peakcube, peakmzs, ms1_mz, params):
+def score_peakcube_against_trees(peakcube, peakmzs, ms1_mz, params, want_match_matrix=False):
     """
     Create a score cube of MIDAS scores for each
 
@@ -278,14 +282,23 @@ def score_peakcube_against_trees(peakcube, peakmzs, ms1_mz, params):
             * ``max_depth``          int, optional.  For restricting scoring to lower max depths than \
                                     are present in the supplied tree
 
+    :param want_match_matrix:   bool, if True then tuple of (score, match_matrix) is returned, else return score only.
+                                Default value is False.
+
     :return: score_cube       a numpy ndarray of shape (nx, ..., len(file_lookup_table))
+    :return: match_matrix     Optional output that is only returned if want_match_matrix is set to True.
+                              List of lists of match matrices (one matrix per scan). Each entry is a bool matrix
+                              with n_peaks columns and n_nodes rows. Elements are True if given peak matches given
+                              node of frag_dag. An entry will be None in case that the hit-score was 0. The return
+                              value will be None if want_match_matrix is set to Fals (Default)
+
 
     Unlike score_scan_list_against_trees, this function is designed to work on numpy arrays of spectra.  It is more
      appropriate for imaging data where:
         1. an common MS1 precursor has been fragmented and scanned many times/places, as long as
         2. a global peak finder has been run on all spectra, so peak intensities exist for every peak at every pixel
     """
-    # TODO: add support for want_match_matrix
+    # TODO:  Test support for 'want_match_matrix' parameter
     # unpack parameters
     neutralizations = params['neutralizations']
     ms2_mass_tol = params['ms2_mass_tol']
@@ -307,6 +320,9 @@ def score_peakcube_against_trees(peakcube, peakmzs, ms1_mz, params):
 
     # initialize score_cube
     score_cube = np.zeros(shape=(n_coordinates, n_compounds), dtype=float)
+
+    # Initalize the match matrix
+    match_matrix = None if not want_match_matrix else ([[None] * n_compounds] * n_coordinates)
 
     # figure files to score
     file_idxs = []
@@ -330,19 +346,30 @@ def score_peakcube_against_trees(peakcube, peakmzs, ms1_mz, params):
             if intensities.max() == 0:
                 continue  # if all peaks are 0 intensity (e.g. masked data) skip scoring algo and keep score at 0
             mz_intensity_arr = np.array([mzs, intensities])
-            score_cube[i, idx] = calculate_MIDAS_score(mz_intensity_arr,
-                                                       tree,
-                                                       mass_tol=ms2_mass_tol,
-                                                       neutralizations=neutralizations)
+            if want_match_matrix:
+                score_cube[i, idx], match_matrix[i][idx] = calculate_MIDAS_score(mz_intensity_arr,
+                                                                                 tree,
+                                                                                 mass_tol=ms2_mass_tol,
+                                                                                 neutralizations=neutralizations,
+                                                                                 want_match_matrix=True)
+            else:
+                score_cube[i, idx] = calculate_MIDAS_score(mz_intensity_arr,
+                                                           tree,
+                                                           mass_tol=ms2_mass_tol,
+                                                           neutralizations=neutralizations,
+                                                           want_match_matrix=False)
 
-    # reshape output and return
-    tuple_of_tuples = (spatial_dimensions, (n_compounds,))
-    score_cube_shape = sum(tuple_of_tuples, ())  # http://stackoverflow.com/a/3205524/4480692
+    # Compute the shape the score cube should have when we return it
+    # Alternatively one could e.g. do tuple(list(spatial_dimensions) + [n_compounds,])
+    score_cube_shape = sum((spatial_dimensions, (n_compounds,)) , ())
 
-    return score_cube.reshape(score_cube_shape)
+    if want_match_matrix:
+        return score_cube.reshape(score_cube_shape), match_matrix.reshape(score_cube_shape)
+    else:
+        return score_cube.reshape(score_cube_shape)
 
 
-def score_scan_list_against_trees(scan_list, ms1_mz, params):
+def score_scan_list_against_trees(scan_list, ms1_mz, params, want_match_matrix=False):
     """
     Create a score cube of MIDAS scores for each
 
@@ -363,13 +390,21 @@ def score_scan_list_against_trees(scan_list, ms1_mz, params):
             * ``max_depth``          int, optional.  For restricting scoring to lower max depths than \
                                     are present in the supplied tree
 
+    :param want_match_matrix:   bool, if True then tuple of (score, match_matrix) is returned, else return score only.
+                                Default value is False.
+
     :return: score_matrix     a numpy ndarray of shape (n_scans, len(file_lookup_table))
+    :return: match_matrix     Optional output that is only returned if want_match_matrix is set to True.
+                              List of lists of match matrices (one matrix per scan). Each entry is a bool matrix
+                              with n_peaks columns and n_nodes rows. Elements are True if given peak matches given
+                              node of frag_dag. An entry will be None in case that the hit-score was 0. The return
+                              value will be None if want_match_matrix is set to Fals (Default)
 
     Unlike score_peakcube_against_trees, this function is designed to work on _lists_ of spectra.  It is more
      appropriate for spectra directly extracted from mzML files or for centroided data.  This function does NOT
      assume that each scan in the list has the same precursors.
     """
-    # TODO: add support for 'want_match_matrix' parameter
+    # TODO: Test support for 'want_match_matrix' parameter
     # TODO: return a sparse matrix?
     # unpack parameters
     neutralizations = params['neutralizations']
@@ -388,6 +423,7 @@ def score_scan_list_against_trees(scan_list, ms1_mz, params):
 
     # initialize output variable score_matrix
     score_matrix = np.zeros(shape=(n_scans, n_compounds), dtype=float)
+    match_matrix = None if not want_match_matrix else ([[None] * n_compounds] * n_scans)
 
     # cannot assume common parent for all scans; must loop over scans first
     # if this part is slow it can be improved by grouping/clustering scans by common precursor first
@@ -413,11 +449,23 @@ def score_scan_list_against_trees(scan_list, ms1_mz, params):
             data_key = file_reader[group_key].keys()[0]
             tree = file_reader[group_key][data_key][:]
 
-            score_matrix[i, idx] = calculate_MIDAS_score(scan,
-                                                         tree,
-                                                         mass_tol=ms2_mass_tol,
-                                                         neutralizations=neutralizations)
-    return score_matrix
+            if want_match_matrix:
+                score_matrix[i, idx], match_matrix[i][idx] = calculate_MIDAS_score(scan,
+                                                                                   tree,
+                                                                                   mass_tol=ms2_mass_tol,
+                                                                                   neutralizations=neutralizations,
+                                                                                   want_match_matrix=True)
+            else:
+                score_matrix[i, idx] = calculate_MIDAS_score(scan,
+                                                             tree,
+                                                             mass_tol=ms2_mass_tol,
+                                                             neutralizations=neutralizations,
+                                                             want_match_matrix=False)
+
+    if want_match_matrix:
+        return score_matrix, match_matrix
+    else:
+        return score_matrix
 
 
 def make_pactolus_hit_table(pactolus_results, table_file, original_db, return_list=True):
@@ -514,3 +562,4 @@ def crossref_to_db(table_file, original_db):
 
     # return
     return db_arr[matches]
+
