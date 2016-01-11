@@ -16,7 +16,10 @@ from collections import OrderedDict
 from random import choice
 from string import lowercase
 from time import time
+
+# command line args
 import argparse
+from pactolus.third_party.argparse_helper import RawDescriptionDefaultHelpArgParseFormatter
 
 # other common libraries
 import csv
@@ -53,12 +56,7 @@ except ImportError:
                 return 0
 
 
-class RawDescriptionDefaultHelpArgParseFormatter(argparse.ArgumentDefaultsHelpFormatter,
-                                                 argparse.RawDescriptionHelpFormatter):
-    """
-    Simple derived formatter class for use with argparse
-    """
-    pass
+
 
 
 """
@@ -474,7 +472,6 @@ class FragTreeLibrary(object):
 COMMAND LINE USAGE
 ----------------
 """
-
 
 def command_line_params():
     """
