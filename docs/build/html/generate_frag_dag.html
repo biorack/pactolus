@@ -87,7 +87,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="">generate_frag_dag module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="score_frag_dag.html">score_frag_dag module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="score_spectra.html">score_spectra module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spectra_distance.html">spectra_distance module</a></li>
 </ul>
 </li>
 </ul>
@@ -262,13 +262,6 @@ this molecule must (i) be fully connected by covalent bonds and
 
 </dd></dl>
 
-<dl class="class">
-<dt id="pactolus.generate_frag_dag.RawDescriptionDefaultHelpArgParseFormatter">
-<em class="property">class </em><code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">RawDescriptionDefaultHelpArgParseFormatter</code><span class="sig-paren">(</span><em>prog</em>, <em>indent_increment=2</em>, <em>max_help_position=24</em>, <em>width=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#RawDescriptionDefaultHelpArgParseFormatter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.RawDescriptionDefaultHelpArgParseFormatter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">argparse.ArgumentDefaultsHelpFormatter</span></code>, <code class="xref py py-class docutils literal"><span class="pre">argparse.RawDescriptionHelpFormatter</span></code></p>
-<p>Simple derived formatter class for use with argparse</p>
-</dd></dl>
-
 <dl class="function">
 <dt id="pactolus.generate_frag_dag.command_line_params">
 <code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">command_line_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#command_line_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.command_line_params" title="Permalink to this definition">¶</a></dt>
@@ -293,6 +286,24 @@ this molecule must (i) be fully connected by covalent bonds and
 <dt id="pactolus.generate_frag_dag.main">
 <code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.main" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main function</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pactolus.generate_frag_dag.mpi_helper">
+<em class="property">class </em><code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">mpi_helper</code><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#mpi_helper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.mpi_helper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Dummy mpi_helper class used to ensure that the code works
+in serial even if the mpi_helper cannot be imported</p>
+<dl class="attribute">
+<dt id="pactolus.generate_frag_dag.mpi_helper.MPI_AVAILABLE">
+<code class="descname">MPI_AVAILABLE</code><em class="property"> = False</em><a class="headerlink" href="#pactolus.generate_frag_dag.mpi_helper.MPI_AVAILABLE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="pactolus.generate_frag_dag.mpi_helper.get_rank">
+<em class="property">static </em><code class="descname">get_rank</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#mpi_helper.get_rank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.mpi_helper.get_rank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="function">

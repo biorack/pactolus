@@ -146,7 +146,10 @@
 <span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">choice</span>
 <span class="kn">from</span> <span class="nn">string</span> <span class="kn">import</span> <span class="n">lowercase</span>
 <span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
+
+<span class="c"># command line args</span>
 <span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">from</span> <span class="nn">pactolus.third_party.argparse_helper</span> <span class="kn">import</span> <span class="n">RawDescriptionDefaultHelpArgParseFormatter</span>
 
 <span class="c"># other common libraries</span>
 <span class="kn">import</span> <span class="nn">csv</span>
@@ -171,7 +174,7 @@
         <span class="kn">import</span> <span class="nn">pactolus.third_party.mpi_helper</span> <span class="kn">as</span> <span class="nn">mpi_helper</span>
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
         <span class="k">print</span> <span class="s">&quot;MPI IMPORT FAILED. RUNNING IN SERIAL.&quot;</span>
-        <span class="k">class</span> <span class="nc">mpi_helper</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="mpi_helper"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.mpi_helper">[docs]</a>        <span class="k">class</span> <span class="nc">mpi_helper</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Dummy mpi_helper class used to ensure that the code works</span>
 <span class="sd">            in serial even if the mpi_helper cannot be imported</span>
@@ -179,18 +182,13 @@
             <span class="n">MPI_AVAILABLE</span> <span class="o">=</span> <span class="bp">False</span>
 
             <span class="nd">@staticmethod</span>
-            <span class="k">def</span> <span class="nf">get_rank</span><span class="p">():</span>
+<div class="viewcode-block" id="mpi_helper.get_rank"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.mpi_helper.get_rank">[docs]</a>            <span class="k">def</span> <span class="nf">get_rank</span><span class="p">():</span>
                 <span class="k">return</span> <span class="mi">0</span>
 
 
-<div class="viewcode-block" id="RawDescriptionDefaultHelpArgParseFormatter"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.RawDescriptionDefaultHelpArgParseFormatter">[docs]</a><span class="k">class</span> <span class="nc">RawDescriptionDefaultHelpArgParseFormatter</span><span class="p">(</span><span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentDefaultsHelpFormatter</span><span class="p">,</span>
-                                                 <span class="n">argparse</span><span class="o">.</span><span class="n">RawDescriptionHelpFormatter</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Simple derived formatter class for use with argparse</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">pass</span>
 
-</div>
+
+</div></div>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">----------------</span>
 <span class="sd">HELPER FUNCTIONS</span>
@@ -604,7 +602,6 @@
 <span class="sd">COMMAND LINE USAGE</span>
 <span class="sd">----------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
-
 
 <div class="viewcode-block" id="command_line_params"><a class="viewcode-back" href="../../generate_frag_dag.html#pactolus.generate_frag_dag.command_line_params">[docs]</a><span class="k">def</span> <span class="nf">command_line_params</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>

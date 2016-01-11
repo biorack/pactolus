@@ -11,7 +11,7 @@
 
     pactolus.generate_frag_dag
     pactolus.score_frag_dag
-    pactolus.score_spectra
+    pactolus.spectra_distance
 
 
 .. toctree::
@@ -19,4 +19,4 @@
 
    generate_frag_dag
    score_frag_dag
-   score_spectra
+   spectra_distance
