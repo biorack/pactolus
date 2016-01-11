@@ -3,6 +3,15 @@
 Score spectra/scans against a collection of molecular fragmentation trees.
 
 """
+# TODO Update tree files to include molecule name and other metadata from the original molecular database
+# TODO Update crossref_to_db to allow look-up of information from tree files
+# TODO Update crossref_to_db to have a safe fallback solution when the database file is missing and the metadata is also not available in the trees
+# TODO score_peakcube_against_trees test support for 'want_match_matrix' parameter
+# TODO score_scan_list_against_trees test support for 'want_match_matrix' parameter
+# TODO score_scan_list_against_trees and score_peakcube_against_trees allow return of a sparse matrix?
+# TODO Test the workflow with the retrieval of the match matrix and allow storage of the match matrix in BASTet
+# TODO Once everything works in BASTet. Port/add a main function so that we can run the scoring from the command-line independent of BASTet (i.e, asside from the code we need from BASTet that we have added to the third_party folder)
+
 __authors__ = 'Curt R. Fischer, Oliver Ruebel, Benjamin P. Bowen'
 __copyright__ = 'Lawrence Berkeley National Laboratory and Authors, 2015.  All rights currently reserved.'
 
@@ -300,7 +309,6 @@ def score_peakcube_against_trees(peakcube, peakmzs, ms1_mz, params, want_match_m
         1. an common MS1 precursor has been fragmented and scanned many times/places, as long as
         2. a global peak finder has been run on all spectra, so peak intensities exist for every peak at every pixel
     """
-    # TODO:  Test support for 'want_match_matrix' parameter
     # unpack parameters
     neutralizations = params['neutralizations']
     ms2_mass_tol = params['ms2_mass_tol']
@@ -406,8 +414,6 @@ def score_scan_list_against_trees(scan_list, ms1_mz, params, want_match_matrix=F
      appropriate for spectra directly extracted from mzML files or for centroided data.  This function does NOT
      assume that each scan in the list has the same precursors.
     """
-    # TODO: Test support for 'want_match_matrix' parameter
-    # TODO: return a sparse matrix?
     # unpack parameters
     neutralizations = params['neutralizations']
     ms2_mass_tol = params['ms2_mass_tol']
