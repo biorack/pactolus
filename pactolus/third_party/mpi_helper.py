@@ -64,20 +64,42 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 try:
-    from mpi4py import MPI
-    MPI_AVAILABLE = True
+    def test_mpi_available():
+        """
+        This function import MPI in a seperate process to safely check if
+        MPI is available. This precaution is necessary as on Cray systems
+        importing MPI can lead to a crash on, e.g., login nodes where the
+        use of MPI is not permitted. By executing the import in a separate
+        process we avoid crashing the main process and we can safely check
+        whether the process aborted or not.
+
+        :return: False if the import failed, otherwise return True
+        """
+        import sys
+        from subprocess import Popen, PIPE
+        process = Popen('%s -c "from mpi4py import MPI as mpi"'%( \
+                         sys.executable), shell=True, stderr=PIPE, stdout=PIPE)
+        import_failed = process.wait()
+        return not import_failed
+
+    MPI_AVAILABLE = test_mpi_available()
+
+    if MPI_AVAILABLE:
+        from mpi4py import MPI
 except ImportError:
     MPI_AVAILABLE = False
+
+if not MPI_AVAILABLE:
+    try:
+        from omsi.shared.log import log_helper
+        log_helper.warning(__name__, "MPI not available. Running in serial.")
+    except:
+        print "MPI not available. Running in serial."
+
 import numpy as np
 import itertools
 import warnings
 import time
-import os
-
-try:
-    from omsi.shared.log import log_helper
-except ImportError:
-    from pactolus.third_party.log import log_helper
 
 
 class parallel_over_axes(object):
@@ -174,6 +196,10 @@ class parallel_over_axes(object):
                for each task.
 
         """
+        try:
+            from omsi.shared.log import log_helper
+        except ImportError:
+            from pactolus.third_party.log import log_helper
         start_time = time.time()
         self.__data_collected = False
         if self.schedule == self.SCHEDULES['DYNAMIC']:
@@ -208,6 +234,10 @@ class parallel_over_axes(object):
             containing the combined data of all  self.result and self.blocks from all ranks respectively.
 
         """
+        try:
+            from omsi.shared.log import log_helper
+        except ImportError:
+            from pactolus.third_party.log import log_helper
         # If we have collected the data already then we don't need to do it again
         if self.__data_collected and not force_collect:
             return self.result, self.blocks
@@ -252,6 +282,10 @@ class parallel_over_axes(object):
                a range slice object along the axes used for decomposition.
 
         """
+        try:
+            from omsi.shared.log import log_helper
+        except ImportError:
+            from pactolus.third_party.log import log_helper
         start_time = time.time()
         # Get MPI parameters
         rank = get_rank(comm=self.comm)
@@ -319,6 +353,10 @@ class parallel_over_axes(object):
                a range slice object along the axes used for decomposition.
 
         """
+        try:
+            from omsi.shared.log import log_helper
+        except ImportError:
+            from pactolus.third_party.log import log_helper
         import time
         rank = get_rank(comm=self.comm)
         size = get_size(comm=self.comm)
@@ -517,4 +555,3 @@ def mpi_type_from_dtype(dtype):
             return None
     else:
         return None
-

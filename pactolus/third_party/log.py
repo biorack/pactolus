@@ -67,8 +67,10 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 import logging
-import omsi.shared.mpi_helper as mpi_helper
-
+try:
+    import omsi.shared.mpi_helper as mpi_helper
+except ImportError:
+    import pactolus.third_party.mpi_helper as mpi_helper
 
 class log_helper(object):
     """
