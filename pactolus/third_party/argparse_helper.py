@@ -1,5 +1,6 @@
 """
-COPYRIGHT: This module has been extracted from BASTet (Berkeley Analysis and Storage Toolkit). (omsi/workflow/common.py)
+COPYRIGHT: This module has been extracted from BASTet (Berkeley Analysis and Storage Toolkit).
+           In BASTet the sources are in omsi/workflow/common.py and in part of omsi/datastructures/analysis_data
 
 *** Copyright Notice ***
 
@@ -59,6 +60,10 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
 
+#########################################################
+#      omsi/workflow/common.py                          #
+#########################################################
+
 import argparse
 
 class RawDescriptionDefaultHelpArgParseFormatter(argparse.ArgumentDefaultsHelpFormatter,
@@ -67,3 +72,79 @@ class RawDescriptionDefaultHelpArgParseFormatter(argparse.ArgumentDefaultsHelpFo
     Simple derived formatter class for use with argparse
     """
     pass
+
+
+#########################################################
+#      Part of omsi/analysis/analysis_data.py           #
+#########################################################
+class data_dtypes(dict):
+    """
+    Class specifying basic function for specifying common
+    data types used as part of an analysis.
+    """
+    @staticmethod
+    def get_dtypes():
+        """
+        Get a list of available data type specifications
+        """
+        dtypes = {'int': int,
+                  'float': float,
+                  'long': long,
+                  'complex': complex,
+                  'bool': data_dtypes.bool_type,
+                  'str': str,
+                  'unicode': unicode,
+                  'ndarray': data_dtypes.ndarray}
+        return dtypes
+
+    @staticmethod
+    def bool_type(argument):
+        """
+        Implement conversion of boolean input parameters since
+        arparse (or bool, depending on the point of view), do not
+        handle bool as a type in an intuitive fashion.
+
+        :param argument: The argument to be parsed to a boolean
+        :return: The converted value
+        """
+        try:
+            bool(int(argument))
+        except ValueError:
+            if argument in ('TRUE', 'true', 'True', 't', 'T'):
+                return True
+            elif argument in ('FALSE', 'false', 'False', 'f', 'F'):
+                return False
+            else:
+                raise ValueError('Parameter could not be converted to type bool')
+
+    @staticmethod
+    def ndarray(argument):
+        """
+        This dtype may be used to indicate numpy ndarrays as
+        well as h5py arrays or omsi_dependencies
+
+        :param argument: The argument to be parsed to ndarray
+
+        :return: The converted ndarray
+        """
+        from omsi.dataformat.omsi_file.analysis import omsi_file_analysis
+        from omsi.dataformat.omsi_file.msidata import omsi_file_msidata
+        from omsi.dataformat.omsi_file.common import omsi_file_common
+        if isinstance(argument, basestring):
+            try:
+                return np.asarray(ast.literal_eval(argument))
+            except (ValueError, SyntaxError):
+                omsi_out_object = omsi_file_common.get_omsi_object(h5py_object=argument)
+                if omsi_out_object is not None:
+                    return omsi_out_object
+                else:
+                    raise ValueError('String could not be converted to valid ndarray. This may be ' +
+                                     'due to, e.g., a syntax error or the file may not exists')
+        elif isinstance(argument, dependency_dict) or \
+                isinstance(argument, h5py.Dataset) or isinstance(argument, h5py.Group) or \
+                isinstance(argument, omsi_file_analysis) or \
+                isinstance(argument, omsi_file_msidata):
+            return argument
+        elif argument is None:
+            return None
+        return np.asarray(argument)
