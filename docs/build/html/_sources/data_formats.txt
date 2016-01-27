@@ -51,6 +51,13 @@ output results may be stored in an arbitray user-defined group which will contai
     * ``compound_metadata/`` : Group with additional optional metadata about the compounds. This may include fields like: ``num_atoms``, ``num_bonds``, ``id``, ``name``, ``inchi``, ``lins``, ``inchi_key``, ``mass``, depending on whether the data is constructed from the metadata database and/or the tree files
     * ``scans/`` : Optional group with the actual scan data stored using the scan data format described above.
 
+In addition, the following optional attributes are typically collected with the output:
+
+    * ``scoring_time_with_temp_io``: Floating point number with the time in seconds used to calculate all scores, including any temporary i/o and other operations performed as part of the scoring (e.g., also including compiling of input arguments, reading of input files etc.). When running in parallel. this is the time from the root rank (usually 0).
+    * ``start_time`` : String indicating the start time of the execution in human-readable form (usually from str(datetime.datetime.now()_). This is the time when python was ready to run. When running in parallel with MPI, this is the time when rank 0 started.
+    * ``time_to_collect_and_write_output`` : The time in seconds used on the master rank to collect the results from all ranks (from the tempfiles and other outputs) and write the consolidated results to file.
+    * All arguments provided to :py:func:`pactolus.score_frag_dag.main` either via the command-line or as explicit keyword arguments
+
 
 Tree file lookup table data format (score_frag_dag)
 ---------------------------------------------------

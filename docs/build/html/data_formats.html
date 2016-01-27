@@ -183,6 +183,15 @@ output results may be stored in an arbitray user-defined group which will contai
 <li><code class="docutils literal"><span class="pre">scans/</span></code> : Optional group with the actual scan data stored using the scan data format described above.</li>
 </ul>
 </div></blockquote>
+<p>In addition, the following optional attributes are typically collected with the output:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">scoring_time_with_temp_io</span></code>: Floating point number with the time in seconds used to calculate all scores, including any temporary i/o and other operations performed as part of the scoring (e.g., also including compiling of input arguments, reading of input files etc.). When running in parallel. this is the time from the root rank (usually 0).</li>
+<li><code class="docutils literal"><span class="pre">start_time</span></code> : String indicating the start time of the execution in human-readable form (usually from str(datetime.datetime.now()_). This is the time when python was ready to run. When running in parallel with MPI, this is the time when rank 0 started.</li>
+<li><code class="docutils literal"><span class="pre">time_to_collect_and_write_output</span></code> : The time in seconds used on the master rank to collect the results from all ranks (from the tempfiles and other outputs) and write the consolidated results to file.</li>
+<li>All arguments provided to <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.main" title="pactolus.score_frag_dag.main"><code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.main()</span></code></a> either via the command-line or as explicit keyword arguments</li>
+</ul>
+</div></blockquote>
 </div>
 <div class="section" id="tree-file-lookup-table-data-format-score-frag-dag">
 <h2>Tree file lookup table data format (score_frag_dag)<a class="headerlink" href="#tree-file-lookup-table-data-format-score-frag-dag" title="Permalink to this headline">¶</a></h2>

@@ -157,6 +157,7 @@
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
 <span class="kn">from</span> <span class="nn">tempfile</span> <span class="kn">import</span> <span class="n">NamedTemporaryFile</span>
 
 <span class="c"># numpy and scipy</span>
@@ -1448,8 +1449,10 @@
                                     <span class="n">save_scan_list</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                                     <span class="n">scan_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                                     <span class="n">experiment_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                    <span class="n">global_metadata_attributes</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                                     <span class="n">file_lookup_table</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                                    <span class="n">compound_metadata</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                    <span class="n">collect_compound_metadata</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                    <span class="n">metabolite_database</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                                     <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                                     <span class="n">mpi_root</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1467,19 +1470,41 @@
 <span class="sd">                                                        (n_peaks, 2), with mzs in column 1 an intensities in col 2.</span>
 <span class="sd">                                                        Length of list is n_scans long</span>
 <span class="sd">    :param save_scan_list: Boolean indicating whether we should include the scan_list in the output file</span>
-<span class="sd">    :param scan_meta: Dictionary of scan metadata. Keys are dataset names and values are numpy data arrays.</span>
-<span class="sd">    :param experiment_meta: Dictionary of the experiment metadata. Keys are dataset names and values are</span>
+<span class="sd">    :param scan_metadata: Dictionary of scan metadata. Keys are dataset names and values are numpy data arrays.</span>
+<span class="sd">    :param experiment_metadata: Dictionary of the experiment metadata. Keys are dataset names and values are</span>
 <span class="sd">                numpy data arrays.</span>
-<span class="sd">    :param compound_metadata: Dictionary of compound metadata. Keys are dataset names and values are numpy data</span>
-<span class="sd">                arrays where the first dimension should have the same lenght and order as the compounds/tree</span>
-<span class="sd">                dimension in the scores array.</span>
+<span class="sd">    :param global_metadata_attributes: Additional global metadata about the run to be stored as attributes on the</span>
+<span class="sd">                 output group</span>
+<span class="sd">    :param collect_compound_metadata: Boolean indicating whether we shoudl collect and save compound metadata</span>
+<span class="sd">    :param metabolite_database: Optional metabolite database. This is used to collect additional compound metadata</span>
+<span class="sd">            if collect_compound_metadata is set to True</span>
 <span class="sd">    :param file_lookup_table: The numpy array with the file look-up table for the tree files used for scoring</span>
 <span class="sd">    :param mpi_comm: The MPI communicator to be used</span>
 <span class="sd">    :param mpi_root: The MPI root rank to be used for writing</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">get_rank</span><span class="p">(</span><span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">)</span> <span class="o">!=</span> <span class="n">mpi_root</span><span class="p">:</span>
         <span class="k">return</span>
+
+    <span class="c"># Compile the compound metadata</span>
+    <span class="n">compound_metadata</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">collect_compound_metadata</span><span class="p">:</span>
+        <span class="c"># Create the compound metadata from the tree files if possible</span>
+        <span class="n">compound_metadata</span> <span class="o">=</span> <span class="n">compound_metadata_from_trees</span><span class="p">(</span><span class="n">table_file</span><span class="o">=</span><span class="n">file_lookup_table</span><span class="p">,</span>
+                                                         <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                                         <span class="n">mpi_root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c"># Update/expand compound metadata based on the metabolite database and file lookup table</span>
+        <span class="k">if</span> <span class="n">metabolite_database</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">file_lookup_table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">compound_db</span> <span class="o">=</span> <span class="n">crossref_to_db</span><span class="p">(</span><span class="n">table_file</span><span class="o">=</span><span class="n">file_lookup_table</span><span class="p">,</span>
+                                             <span class="n">original_db</span><span class="o">=</span><span class="n">metabolite_database</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">METACYC_DTYPE</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+                    <span class="n">key</span> <span class="o">=</span> <span class="n">field_name</span> <span class="k">if</span> <span class="n">field_name</span> <span class="o">!=</span> <span class="s">&#39;metacyc_id&#39;</span> <span class="k">else</span> <span class="s">&#39;id&#39;</span>
+                    <span class="n">compound_metadata</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">compound_db</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">log_helper</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;Crossreferencing with metabolite database failed.&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()),</span>
+                                 <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">)</span>
 
     <span class="c"># Create/open the main output file</span>
     <span class="n">output_file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">output_filepath</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">)</span>
@@ -1603,6 +1628,24 @@
         <span class="c"># Create a link to the experiment and scan metadata</span>
         <span class="n">scan_group</span><span class="p">[</span><span class="s">&#39;experiment_metadata&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">experiment_metadata_group</span>
         <span class="n">scan_group</span><span class="p">[</span><span class="s">&#39;scan_metadata&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scan_metadata_group</span>
+
+    <span class="c"># Write the global metadata if necessary</span>
+    <span class="k">if</span> <span class="n">global_metadata_attributes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">global_metadata_attributes</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">output_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">log_helper</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&#39;Global metadata for &#39;</span> <span class="o">+</span> <span class="n">key</span> <span class="o">+</span> <span class="s">&quot; failed to save&quot;</span><span class="p">,</span>
+                                   <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+
+    <span class="c"># Record the time used for I/O</span>
+    <span class="n">output_file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="n">io_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+    <span class="n">output_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;time_to_collect_and_write_output&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">io_time</span>
+
+    <span class="c"># Flush and close the output file</span>
+    <span class="n">output_file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="n">output_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
 </div>
 <div class="viewcode-block" id="compound_metadata_from_trees"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.compound_metadata_from_trees">[docs]</a><span class="k">def</span> <span class="nf">compound_metadata_from_trees</span><span class="p">(</span><span class="n">table_file</span><span class="p">,</span>
@@ -1766,8 +1809,14 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">global</span> <span class="n">METACYC_DTYPE</span>
 
+    <span class="c"># Get the MPI information and make sure that all ranks are ready. This is mainly to ensure a half-way consistent timing</span>
     <span class="n">mpi_root</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">mpi_comm</span> <span class="o">=</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">get_comm_world</span><span class="p">()</span>
+    <span class="n">mpi_helper</span><span class="o">.</span><span class="n">barrier</span><span class="p">(</span><span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">)</span>
+
+    <span class="c"># Record the start time</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">start_time_meta</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
 
     <span class="c"># Parse the command line arguments if necessary</span>
     <span class="k">if</span> <span class="n">use_command_line</span><span class="p">:</span>
@@ -1880,24 +1929,12 @@
                                             <span class="n">mpi_comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span>
                                             <span class="n">mpi_root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
 
-    <span class="c"># Compile the compound metadata</span>
-    <span class="n">compound_metadata</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">if</span> <span class="n">pass_compound_meta</span><span class="p">:</span>
-        <span class="c"># Create the compound metadata from the tree files if possible</span>
-        <span class="n">compound_metadata</span> <span class="o">=</span> <span class="n">compound_metadata_from_trees</span><span class="p">(</span><span class="n">table_file</span><span class="o">=</span><span class="n">file_lookup_table</span><span class="p">,</span>
-                                                         <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                                                         <span class="n">mpi_root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="c"># Update/expand compound metadata based on the metabolite database</span>
-    <span class="k">if</span> <span class="n">metabolite_database</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">compound_db</span> <span class="o">=</span> <span class="n">crossref_to_db</span><span class="p">(</span><span class="n">table_file</span><span class="o">=</span><span class="n">file_lookup_table</span><span class="p">,</span>
-                                         <span class="n">original_db</span><span class="o">=</span><span class="n">metabolite_database</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">METACYC_DTYPE</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
-                <span class="n">key</span> <span class="o">=</span> <span class="n">field_name</span> <span class="k">if</span> <span class="n">field_name</span> <span class="o">!=</span> <span class="s">&#39;metacyc_id&#39;</span> <span class="k">else</span> <span class="s">&#39;id&#39;</span>
-                <span class="n">compound_metadata</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">compound_db</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="n">log_helper</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;Crossreferencing with metabolite database failed.&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()),</span>
-                             <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">)</span>
+    <span class="n">scoring_time_with_temp_io</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+    <span class="n">global_metadata_attributes</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;scoring_time_with_temp_io&#39;</span><span class="p">:</span> <span class="n">scoring_time_with_temp_io</span><span class="p">,</span>
+                                  <span class="s">&#39;start_time&#39;</span><span class="p">:</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">start_time_meta</span><span class="p">)}</span>
+    <span class="n">global_metadata_attributes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">command_line_args</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">global_metadata_attributes</span><span class="p">[</span><span class="s">&#39;metabolite_database&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">global_metadata_attributes</span><span class="p">[</span><span class="s">&#39;metabolite_database&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
 
     <span class="c"># Compile the results from all output files to the output file if requested</span>
     <span class="k">if</span> <span class="n">output_filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
@@ -1923,8 +1960,10 @@
                                         <span class="n">save_scan_list</span><span class="o">=</span><span class="n">pass_scans</span><span class="p">,</span>
                                         <span class="n">scan_metadata</span><span class="o">=</span><span class="n">scan_metadata</span> <span class="k">if</span> <span class="n">pass_scanmeta</span> <span class="k">else</span> <span class="p">{},</span>
                                         <span class="n">experiment_metadata</span><span class="o">=</span><span class="n">experiment_metadata</span> <span class="k">if</span> <span class="n">pass_scanmeta</span> <span class="k">else</span> <span class="p">{},</span>
-                                        <span class="n">compound_metadata</span><span class="o">=</span><span class="n">compound_metadata</span><span class="p">,</span>
+                                        <span class="n">global_metadata_attributes</span><span class="o">=</span><span class="n">global_metadata_attributes</span><span class="p">,</span>
                                         <span class="n">file_lookup_table</span><span class="o">=</span><span class="n">file_lookup_table</span><span class="p">,</span>
+                                        <span class="n">collect_compound_metadata</span><span class="o">=</span><span class="n">pass_compound_meta</span><span class="p">,</span>
+                                        <span class="n">metabolite_database</span><span class="o">=</span><span class="n">metabolite_database</span><span class="p">,</span>
                                         <span class="n">mpi_comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span>
                                         <span class="n">mpi_root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
 
@@ -1936,8 +1975,6 @@
         <span class="k">if</span> <span class="n">cleanup_temporary_files</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tempfile_name</span><span class="p">):</span>
             <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tempfile_name</span><span class="p">)</span>
 
-    <span class="c"># TODO Save execution settings and statistics</span>
-    <span class="c"># TODO Check why match matrices are not None in score_scan_list_against_trees_serial even for scores that are not calculated</span>
 </div>
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="n">main</span><span class="p">(</span><span class="n">use_command_line</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>

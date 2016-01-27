@@ -36,6 +36,7 @@ import re
 import os
 import sys
 import time
+import datetime
 from tempfile import NamedTemporaryFile
 
 # numpy and scipy
@@ -1327,8 +1328,10 @@ def collect_score_scan_list_results(temp_filename_lists,
                                     save_scan_list=False,
                                     scan_metadata=None,
                                     experiment_metadata=None,
+                                    global_metadata_attributes=None,
                                     file_lookup_table=None,
-                                    compound_metadata=None,
+                                    collect_compound_metadata=False,
+                                    metabolite_database=None,
                                     mpi_comm=None,
                                     mpi_root=0):
     """
@@ -1346,19 +1349,41 @@ def collect_score_scan_list_results(temp_filename_lists,
                                                         (n_peaks, 2), with mzs in column 1 an intensities in col 2.
                                                         Length of list is n_scans long
     :param save_scan_list: Boolean indicating whether we should include the scan_list in the output file
-    :param scan_meta: Dictionary of scan metadata. Keys are dataset names and values are numpy data arrays.
-    :param experiment_meta: Dictionary of the experiment metadata. Keys are dataset names and values are
+    :param scan_metadata: Dictionary of scan metadata. Keys are dataset names and values are numpy data arrays.
+    :param experiment_metadata: Dictionary of the experiment metadata. Keys are dataset names and values are
                 numpy data arrays.
-    :param compound_metadata: Dictionary of compound metadata. Keys are dataset names and values are numpy data
-                arrays where the first dimension should have the same lenght and order as the compounds/tree
-                dimension in the scores array.
+    :param global_metadata_attributes: Additional global metadata about the run to be stored as attributes on the
+                 output group
+    :param collect_compound_metadata: Boolean indicating whether we shoudl collect and save compound metadata
+    :param metabolite_database: Optional metabolite database. This is used to collect additional compound metadata
+            if collect_compound_metadata is set to True
     :param file_lookup_table: The numpy array with the file look-up table for the tree files used for scoring
     :param mpi_comm: The MPI communicator to be used
     :param mpi_root: The MPI root rank to be used for writing
 
     """
+    start_time = time.time()
     if mpi_helper.get_rank(comm=mpi_comm) != mpi_root:
         return
+
+    # Compile the compound metadata
+    compound_metadata = {}
+    if collect_compound_metadata:
+        # Create the compound metadata from the tree files if possible
+        compound_metadata = compound_metadata_from_trees(table_file=file_lookup_table,
+                                                         mpi_comm=None,
+                                                         mpi_root=0)
+        # Update/expand compound metadata based on the metabolite database and file lookup table
+        if metabolite_database is not None and file_lookup_table is not None:
+            try:
+                compound_db = crossref_to_db(table_file=file_lookup_table,
+                                             original_db=metabolite_database)
+                for field_name in METACYC_DTYPE.names:
+                    key = field_name if field_name != 'metacyc_id' else 'id'
+                    compound_metadata[field_name] = compound_db[field_name]
+            except:
+                log_helper.error(__name__, "Crossreferencing with metabolite database failed." + str(sys.exc_info()),
+                                 root=mpi_root, comm=mpi_comm)
 
     # Create/open the main output file
     output_file = h5py.File(output_filepath, 'a')
@@ -1482,6 +1507,24 @@ def collect_score_scan_list_results(temp_filename_lists,
         # Create a link to the experiment and scan metadata
         scan_group['experiment_metadata'] = experiment_metadata_group
         scan_group['scan_metadata'] = scan_metadata_group
+
+    # Write the global metadata if necessary
+    if global_metadata_attributes is not None:
+        for key, value in global_metadata_attributes.iteritems():
+            try:
+                output_group.attrs[key] = value
+            except:
+                log_helper.warning(__name__, 'Global metadata for ' + key + " failed to save",
+                                   comm=mpi_comm, root=mpi_root)
+
+    # Record the time used for I/O
+    output_file.flush()
+    io_time = time.time() - start_time
+    output_group.attrs['time_to_collect_and_write_output'] = io_time
+
+    # Flush and close the output file
+    output_file.flush()
+    output_file.close()
 
 
 def compound_metadata_from_trees(table_file,
@@ -1645,8 +1688,14 @@ def main(use_command_line=True, **kwargs):
     """
     global METACYC_DTYPE
 
+    # Get the MPI information and make sure that all ranks are ready. This is mainly to ensure a half-way consistent timing
     mpi_root = 0
     mpi_comm = mpi_helper.get_comm_world()
+    mpi_helper.barrier(comm=mpi_comm)
+
+    # Record the start time
+    start_time = time.time()
+    start_time_meta = datetime.datetime.now()
 
     # Parse the command line arguments if necessary
     if use_command_line:
@@ -1759,24 +1808,12 @@ def main(use_command_line=True, **kwargs):
                                             mpi_comm=mpi_comm,
                                             mpi_root=mpi_root)
 
-    # Compile the compound metadata
-    compound_metadata = {}
-    if pass_compound_meta:
-        # Create the compound metadata from the tree files if possible
-        compound_metadata = compound_metadata_from_trees(table_file=file_lookup_table,
-                                                         mpi_comm=None,
-                                                         mpi_root=0)
-    # Update/expand compound metadata based on the metabolite database
-    if metabolite_database:
-        try:
-            compound_db = crossref_to_db(table_file=file_lookup_table,
-                                         original_db=metabolite_database)
-            for field_name in METACYC_DTYPE.names:
-                key = field_name if field_name != 'metacyc_id' else 'id'
-                compound_metadata[field_name] = compound_db[field_name]
-        except:
-            log_helper.error(__name__, "Crossreferencing with metabolite database failed." + str(sys.exc_info()),
-                             root=mpi_root, comm=mpi_comm)
+    scoring_time_with_temp_io = time.time() - start_time
+    global_metadata_attributes = {'scoring_time_with_temp_io': scoring_time_with_temp_io,
+                                  'start_time': unicode(start_time_meta)}
+    global_metadata_attributes.update(command_line_args)
+    if global_metadata_attributes['metabolite_database'] is None:
+        global_metadata_attributes['metabolite_database'] = ''
 
     # Compile the results from all output files to the output file if requested
     if output_filepath is not None:
@@ -1802,8 +1839,10 @@ def main(use_command_line=True, **kwargs):
                                         save_scan_list=pass_scans,
                                         scan_metadata=scan_metadata if pass_scanmeta else {},
                                         experiment_metadata=experiment_metadata if pass_scanmeta else {},
-                                        compound_metadata=compound_metadata,
+                                        global_metadata_attributes=global_metadata_attributes,
                                         file_lookup_table=file_lookup_table,
+                                        collect_compound_metadata=pass_compound_meta,
+                                        metabolite_database=metabolite_database,
                                         mpi_comm=mpi_comm,
                                         mpi_root=mpi_root)
 
@@ -1815,8 +1854,6 @@ def main(use_command_line=True, **kwargs):
         if cleanup_temporary_files and os.path.exists(tempfile_name):
             os.remove(tempfile_name)
 
-    # TODO Save execution settings and statistics
-    # TODO Check why match matrices are not None in score_scan_list_against_trees_serial even for scores that are not calculated
 
 if __name__ == "__main__":
     main(use_command_line=True)

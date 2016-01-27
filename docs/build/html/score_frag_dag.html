@@ -246,7 +246,7 @@ tempdir and NamedTemporaryFiles will be used instead.</li>
 
 <dl class="function">
 <dt id="pactolus.score_frag_dag.collect_score_scan_list_results">
-<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">collect_score_scan_list_results</code><span class="sig-paren">(</span><em>temp_filename_lists</em>, <em>output_filepath</em>, <em>output_grouppath</em>, <em>num_scans</em>, <em>num_compounds</em>, <em>scan_list</em>, <em>save_scan_list=False</em>, <em>scan_metadata=None</em>, <em>experiment_metadata=None</em>, <em>file_lookup_table=None</em>, <em>compound_metadata=None</em>, <em>mpi_comm=None</em>, <em>mpi_root=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#collect_score_scan_list_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.collect_score_scan_list_results" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">collect_score_scan_list_results</code><span class="sig-paren">(</span><em>temp_filename_lists</em>, <em>output_filepath</em>, <em>output_grouppath</em>, <em>num_scans</em>, <em>num_compounds</em>, <em>scan_list</em>, <em>save_scan_list=False</em>, <em>scan_metadata=None</em>, <em>experiment_metadata=None</em>, <em>global_metadata_attributes=None</em>, <em>file_lookup_table=None</em>, <em>collect_compound_metadata=False</em>, <em>metabolite_database=None</em>, <em>mpi_comm=None</em>, <em>mpi_root=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#collect_score_scan_list_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.collect_score_scan_list_results" title="Permalink to this definition">¶</a></dt>
 <dd><p>Consolidate the results from the incrementally stored scoring results into
 a single file with a consolidated data layout</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -265,12 +265,14 @@ given by a standard &#8220;/&#8221; separated path. Any groups missing in the hi
 (n_peaks, 2), with mzs in column 1 an intensities in col 2.
 Length of list is n_scans long</li>
 <li><strong>save_scan_list</strong> &#8211; Boolean indicating whether we should include the scan_list in the output file</li>
-<li><strong>scan_meta</strong> &#8211; Dictionary of scan metadata. Keys are dataset names and values are numpy data arrays.</li>
-<li><strong>experiment_meta</strong> &#8211; Dictionary of the experiment metadata. Keys are dataset names and values are
+<li><strong>scan_metadata</strong> &#8211; Dictionary of scan metadata. Keys are dataset names and values are numpy data arrays.</li>
+<li><strong>experiment_metadata</strong> &#8211; Dictionary of the experiment metadata. Keys are dataset names and values are
 numpy data arrays.</li>
-<li><strong>compound_metadata</strong> &#8211; Dictionary of compound metadata. Keys are dataset names and values are numpy data
-arrays where the first dimension should have the same lenght and order as the compounds/tree
-dimension in the scores array.</li>
+<li><strong>global_metadata_attributes</strong> &#8211; Additional global metadata about the run to be stored as attributes on the
+output group</li>
+<li><strong>collect_compound_metadata</strong> &#8211; Boolean indicating whether we shoudl collect and save compound metadata</li>
+<li><strong>metabolite_database</strong> &#8211; Optional metabolite database. This is used to collect additional compound metadata
+if collect_compound_metadata is set to True</li>
 <li><strong>file_lookup_table</strong> &#8211; The numpy array with the file look-up table for the tree files used for scoring</li>
 <li><strong>mpi_comm</strong> &#8211; The MPI communicator to be used</li>
 <li><strong>mpi_root</strong> &#8211; The MPI root rank to be used for writing</li>
