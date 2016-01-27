@@ -124,6 +124,8 @@
 <span class="sd">Score spectra/scans against a collection of molecular fragmentation trees.</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
+<span class="c"># QUESTION How can we get the `name`, `metacyc_id`, `lins` from the `inchi string needed to compile the metadata from the treefiles without the database?</span>
+
 <span class="c"># TODO Update tree files to include molecule name and other metadata from the original molecular database</span>
 <span class="c"># TODO Update crossref_to_db to allow look-up of information from tree files</span>
 <span class="c"># TODO Update crossref_to_db to have a safe fallback solution when the database file is missing and the metadata is also not available in the trees</span>
@@ -984,9 +986,11 @@
 <span class="sd">             * `ms2_mass_tolerance` : The ms2 mass tolerance floating point value</span>
 <span class="sd">             * `max_depth` : The maximum search depth in the trees integer value</span>
 <span class="sd">             * `neutralizations` : Numpy array with floating point neutralization values</span>
-<span class="sd">             * `pass_meta`: Boolean indicating whether we should pass additional metadata through to the ouptut</span>
+<span class="sd">             * `pass_scanmeta`: Boolean indicating whether we should pass additional metadata through to the ouptut</span>
 <span class="sd">             * `pass_scans`: Boolean indicating whether the actual scan/spectra data should be passed through \</span>
 <span class="sd">                            to the output.</span>
+<span class="sd">             * `pass_compound_meta` : Boolean indicating whether we should compile compound metadata from the \</span>
+<span class="sd">                        tree file and pass it through to the output.</span>
 <span class="sd">             * `schedule` : The scheduling scheme to be used</span>
 <span class="sd">             * `collect` : Boolean defining whether the results should be collected to rank 0 in parallel</span>
 <span class="sd">             * `loglevel` : String indicating the logging level to be used</span>
@@ -1011,7 +1015,7 @@
                     <span class="s">&quot;        An n-D array is sometimes used to store additional location </span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> \
                     <span class="s">&quot;        That additional data will be ignored.</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> \
                     <span class="s">&quot;  (4) `mz1_mz` or `precursor_mz1` : 1D array with the MS1 precursor m/z value  </span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> \
-                    <span class="s">&quot;      for each scan. Must be #scans long. </span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> \
+                    <span class="s">&quot;      for each scan. Must be #scans long. May also be part of scan_metadata. </span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> \
                     <span class="s">&quot;  (5) `scan_metadata` : Group with additional arrays for per-scan  </span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> \
                     <span class="s">&quot;      metadata that should be passed through. The first  </span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> \
                     <span class="s">&quot;      dimension of the arrays should always have the same  </span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> \
@@ -1057,15 +1061,6 @@
                                          <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                                          <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
                                          <span class="n">dest</span><span class="o">=</span><span class="s">&quot;precursor_mz&quot;</span><span class="p">)</span>
-    <span class="n">optional_argument_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--metabolite_database&quot;</span><span class="p">,</span>
-                                         <span class="n">help</span><span class="o">=</span><span class="s">&quot;The database of metabolites from which the trees were generated.&quot;</span> <span class="o">+</span>
-                                              <span class="s">&quot;Needed only if compound metadata from the database should be included&quot;</span> <span class="o">+</span>
-                                              <span class="s">&quot;in the output.&quot;</span><span class="p">,</span>
-                                         <span class="n">action</span><span class="o">=</span><span class="s">&quot;store&quot;</span><span class="p">,</span>
-                                         <span class="nb">type</span><span class="o">=</span><span class="n">dtypes</span><span class="p">[</span><span class="s">&quot;str&quot;</span><span class="p">],</span>
-                                         <span class="n">default</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span>
-                                         <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                                         <span class="n">dest</span><span class="o">=</span><span class="s">&quot;metabolite_database&quot;</span><span class="p">)</span>
     <span class="n">required_argument_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--trees&quot;</span><span class="p">,</span>
                                          <span class="n">help</span><span class="o">=</span><span class="s">&quot;1) Path to the sub-directory with all relevent .h5 pactolus fragmentation trees. or &quot;</span> <span class="o">+</span>
                                               <span class="s">&quot;2) path to a text-file with a list of names of the tree files, 3) Path to the&quot;</span> <span class="o">+</span>
@@ -1122,13 +1117,13 @@
                                          <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                                          <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
                                          <span class="n">dest</span><span class="o">=</span><span class="s">&quot;collect&quot;</span><span class="p">)</span>
-    <span class="n">optional_argument_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--pass_meta&quot;</span><span class="p">,</span>
+    <span class="n">optional_argument_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--pass_scanmeta&quot;</span><span class="p">,</span>
                                          <span class="n">help</span><span class="o">=</span><span class="s">&quot;Pass per-scan metadata through and include it in the final output&quot;</span><span class="p">,</span>
                                          <span class="n">action</span><span class="o">=</span><span class="s">&quot;store&quot;</span><span class="p">,</span>
                                          <span class="nb">type</span><span class="o">=</span><span class="n">dtypes</span><span class="p">[</span><span class="s">&quot;bool&quot;</span><span class="p">],</span>
                                          <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                                          <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                                         <span class="n">dest</span><span class="o">=</span><span class="s">&quot;pass_meta&quot;</span><span class="p">)</span>
+                                         <span class="n">dest</span><span class="o">=</span><span class="s">&quot;pass_scanmeta&quot;</span><span class="p">)</span>
     <span class="n">optional_argument_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--pass_scans&quot;</span><span class="p">,</span>
                                          <span class="n">help</span><span class="o">=</span><span class="s">&quot;Pass the scan/spectrum data through and include it in the final output&quot;</span><span class="p">,</span>
                                          <span class="n">action</span><span class="o">=</span><span class="s">&quot;store&quot;</span><span class="p">,</span>
@@ -1136,6 +1131,23 @@
                                          <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                                          <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
                                          <span class="n">dest</span><span class="o">=</span><span class="s">&quot;pass_scans&quot;</span><span class="p">)</span>
+    <span class="n">optional_argument_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--pass_compound_meta&quot;</span><span class="p">,</span>
+                                         <span class="n">help</span><span class="o">=</span><span class="s">&quot;Compile compound metadata from the tree file and pass it through &quot;</span> <span class="o">+</span>
+                                              <span class="s">&quot;to the output.&quot;</span><span class="p">,</span>
+                                         <span class="n">action</span><span class="o">=</span><span class="s">&quot;store&quot;</span><span class="p">,</span>
+                                         <span class="nb">type</span><span class="o">=</span><span class="n">dtypes</span><span class="p">[</span><span class="s">&quot;bool&quot;</span><span class="p">],</span>
+                                         <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                         <span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                         <span class="n">dest</span><span class="o">=</span><span class="s">&quot;pass_compound_meta&quot;</span><span class="p">)</span>
+    <span class="n">optional_argument_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--metabolite_database&quot;</span><span class="p">,</span>
+                                         <span class="n">help</span><span class="o">=</span><span class="s">&quot;The database of metabolites from which the trees were generated.&quot;</span> <span class="o">+</span>
+                                              <span class="s">&quot;Needed only if compound metadata from the database should be included&quot;</span> <span class="o">+</span>
+                                              <span class="s">&quot;in the output.&quot;</span><span class="p">,</span>
+                                         <span class="n">action</span><span class="o">=</span><span class="s">&quot;store&quot;</span><span class="p">,</span>
+                                         <span class="nb">type</span><span class="o">=</span><span class="n">dtypes</span><span class="p">[</span><span class="s">&quot;str&quot;</span><span class="p">],</span>
+                                         <span class="n">default</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span>
+                                         <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                         <span class="n">dest</span><span class="o">=</span><span class="s">&quot;metabolite_database&quot;</span><span class="p">)</span>
     <span class="n">optional_argument_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--match_matrix&quot;</span><span class="p">,</span>
                                          <span class="n">help</span><span class="o">=</span><span class="s">&quot;Track and record the match matrix data. Required if the num_matched &quot;</span> <span class="o">+</span>
                                               <span class="s">&quot;and match_matrix_s_c data should be included in the output.&quot;</span><span class="p">,</span>
@@ -1546,47 +1558,59 @@
         <span class="n">scan_group</span><span class="p">[</span><span class="s">&#39;experiment_metadata&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">experiment_metadata_group</span>
         <span class="n">scan_group</span><span class="p">[</span><span class="s">&#39;scan_metadata&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scan_metadata_group</span>
 
+</div>
+<div class="viewcode-block" id="compound_metadata_from_trees"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.compound_metadata_from_trees">[docs]</a><span class="k">def</span> <span class="nf">compound_metadata_from_trees</span><span class="p">(</span><span class="n">table_file</span><span class="p">,</span>
+                                 <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                 <span class="n">mpi_root</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compile metadata for the trees in the given table_file</span>
 
+<span class="sd">    :param table_file:  Full path to .npy file containing tree file names and parent masses or the numpy array directly.</span>
+<span class="sd">    :param mpi_comm: The MPI communicator to be used</span>
+<span class="sd">    :param mpi_root: The MPI root rank to be used for writing</span>
 
-    <span class="c"># Compile the matrix describing the number of peaks that were matched</span>
+<span class="sd">    :return: Dictionary of 1D arrays with metadata information about the compounds. This includes the:</span>
+<span class="sd">            inchi, num_atoms, num_bonds, inchi_key, mass</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># load .npy file &amp; extract inchi keys from the filename</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">table_file</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+        <span class="n">file_lookup_table</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">table_file</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">table_file</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">file_lookup_table</span> <span class="o">=</span> <span class="n">table_file</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Invalid table-file given&#39;</span><span class="p">)</span>
 
+    <span class="c"># Initalize the compound metadata return values</span>
+    <span class="n">num_trees</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_lookup_table</span><span class="p">)</span>
+    <span class="n">compound_metadata</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;inchi&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_trees</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;a1000&#39;</span><span class="p">),</span>
+                         <span class="s">&#39;num_atoms&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_trees</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">),</span>
+                         <span class="s">&#39;num_bonds&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_trees</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">),</span>
+                         <span class="s">&#39;inchi_key&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_trees</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;a100&#39;</span><span class="p">),</span>
+                         <span class="s">&#39;mass&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_trees</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;float&#39;</span><span class="p">),}</span>
+                        <span class="c"># TODO Need the name</span>
+                        <span class="c"># TODO Need the id (or metacyc_id)</span>
+                        <span class="c"># TODO need the lins (???_</span>
 
-    <span class="c"># Compile the compound metadata if available</span>
-    <span class="c"># HIT_TABLE_DTYPE = np.dtype({&#39;names&#39;: [&#39;score&#39;, &#39;id&#39;, &#39;name&#39;,  &#39;mass&#39;, &#39;n_peaks&#39;, &#39;n_match&#39;],</span>
-    <span class="c">#                             &#39;formats&#39;: [&#39;f4&#39;, &#39;a100&#39;, &#39;a100&#39;, &#39;f4&#39;,   &#39;i4&#39;,       &#39;i4&#39;]})</span>
+    <span class="c"># Compile the metadata based on the metadata information stored in the trees</span>
+    <span class="k">for</span> <span class="n">treeindex</span><span class="p">,</span> <span class="n">treefile</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">file_lookup_table</span><span class="p">):</span>
 
-    <span class="c"># def make_pactolus_hit_table(pactolus_results, table_file, original_db, match_matrix=None):</span>
-    <span class="c"># # transform pactolus results into hit table</span>
-    <span class="c"># global HIT_TABLE_DTYPE</span>
-    <span class="c"># db_arr = crossref_to_db(table_file, original_db)</span>
-    <span class="c">#</span>
-    <span class="c"># # return a list of hit_tables when pactolus_results is a score_list</span>
-    <span class="c"># hit_table_list = []</span>
-    <span class="c"># for scan_index, scores in enumerate(pactolus_results):</span>
-    <span class="c">#     num_nonzero = np.count_nonzero(scores)</span>
-    <span class="c">#     hit_table = np.zeros(shape=(num_nonzero), dtype=HIT_TABLE_DTYPE)</span>
-    <span class="c">#     order = scores.argsort()[::-1][:num_nonzero]</span>
-    <span class="c">#     for idx, hit_index in enumerate(order):</span>
-    <span class="c">#         # Determine the number of peaks and number of matched peaks</span>
-    <span class="c">#         npeaks = 0</span>
-    <span class="c">#         nmatched_peaks = 0</span>
-    <span class="c">#         if match_matrix is not None:</span>
-    <span class="c">#             matches = match_matrix[scan_index][hit_index]</span>
-    <span class="c">#             # Since we only look at non-zero scores we should always have a match matrix but just be sure we check</span>
-    <span class="c">#             if matches is not None:</span>
-    <span class="c">#                 npeaks = matches.size</span>
-    <span class="c">#                 nmatched_peaks = matches.sum()</span>
-    <span class="c">#         # Compule the hittable entry</span>
-    <span class="c">#         hit_table[idx] = (scores[hit_index],</span>
-    <span class="c">#                           db_arr[&#39;metacyc_id&#39;][hit_index],</span>
-    <span class="c">#                           db_arr[&#39;name&#39;][hit_index],</span>
-    <span class="c">#                           db_arr[&#39;mass&#39;][hit_index],</span>
-    <span class="c">#                           npeaks,</span>
-    <span class="c">#                           nmatched_peaks,</span>
-    <span class="c">#                           )</span>
-    <span class="c">#     hit_table_list.append(hit_table)</span>
-    <span class="c"># assert len(hit_table_list) == pactolus_results.shape[0]</span>
-    <span class="c"># return hit_table_list</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">treefile</span><span class="p">[</span><span class="s">&#39;filename&#39;</span><span class="p">]</span>
+        <span class="n">file_reader</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">group_key</span> <span class="o">=</span> <span class="n">file_reader</span><span class="o">.</span><span class="n">keys</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">data_key</span> <span class="o">=</span> <span class="n">file_reader</span><span class="p">[</span><span class="n">group_key</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">compound_metadata</span><span class="p">[</span><span class="s">&#39;inchi_key&#39;</span><span class="p">][</span><span class="n">treeindex</span><span class="p">]</span> <span class="o">=</span> <span class="n">group_key</span>
+        <span class="n">compound_metadata</span><span class="p">[</span><span class="s">&#39;mass&#39;</span><span class="p">][</span><span class="n">treeindex</span><span class="p">]</span> <span class="o">=</span> <span class="n">file_reader</span><span class="p">[</span><span class="n">group_key</span><span class="p">][</span><span class="n">data_key</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s">&#39;mass_vec&#39;</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">compound_metadata</span><span class="p">[</span><span class="s">&#39;inchi&#39;</span><span class="p">][</span><span class="n">treeindex</span><span class="p">]</span> <span class="o">=</span> <span class="n">file_reader</span><span class="p">[</span><span class="n">group_key</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;inchi&#39;</span><span class="p">]</span>
+            <span class="n">compound_metadata</span><span class="p">[</span><span class="s">&#39;num_atoms&#39;</span><span class="p">][</span><span class="n">treeindex</span><span class="p">]</span> <span class="o">=</span> <span class="n">file_reader</span><span class="p">[</span><span class="n">group_key</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;num_atoms&#39;</span><span class="p">]</span>
+            <span class="n">compound_metadata</span><span class="p">[</span><span class="s">&#39;num_bonds&#39;</span><span class="p">][</span><span class="n">treeindex</span><span class="p">]</span> <span class="o">=</span> <span class="n">file_reader</span><span class="p">[</span><span class="n">group_key</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;num_bonds&#39;</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log_helper</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;Could not determine metadata for tree: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">treeindex</span><span class="p">),</span>
+                               <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">)</span>
+        <span class="n">file_reader</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="c"># return the compound metadata results</span>
+    <span class="k">return</span> <span class="n">compound_metadata</span>
 
 </div>
 <div class="viewcode-block" id="main"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">use_command_line</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -1647,10 +1671,11 @@
     <span class="n">output_grouppath</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;output_grouppath&#39;</span><span class="p">]</span>
     <span class="n">match_matrix</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;match_matrix&#39;</span><span class="p">]</span>
     <span class="n">cl_precursor_mz</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;precursor_mz&#39;</span><span class="p">]</span>
-    <span class="n">pass_meta</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;pass_meta&#39;</span><span class="p">]</span>
+    <span class="n">pass_scanmeta</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;pass_scanmeta&#39;</span><span class="p">]</span>
     <span class="n">pass_scans</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;pass_scans&#39;</span><span class="p">]</span>
     <span class="n">loglevel</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;loglevel&#39;</span><span class="p">]</span>
     <span class="n">temppath</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;temppath&#39;</span><span class="p">]</span>
+    <span class="n">pass_compound_meta</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;pass_compound_meta&#39;</span><span class="p">]</span>
 
     <span class="c"># Set the log level</span>
     <span class="k">if</span> <span class="n">loglevel</span> <span class="ow">in</span> <span class="n">log_helper</span><span class="o">.</span><span class="n">log_levels</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
@@ -1712,6 +1737,12 @@
 
     <span class="c"># Compile the compound metadata</span>
     <span class="n">compound_metadata</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">pass_compound_meta</span><span class="p">:</span>
+        <span class="c"># Create the compound metadata from the tree files if possible</span>
+        <span class="n">compound_metadata</span> <span class="o">=</span> <span class="n">compound_metadata_from_trees</span><span class="p">(</span><span class="n">table_file</span><span class="o">=</span><span class="n">file_lookup_table</span><span class="p">,</span>
+                                                         <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                                         <span class="n">mpi_root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="c"># Update/expand compound metadata based on the metabolite database</span>
     <span class="k">if</span> <span class="n">metabolite_database</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">compound_db</span> <span class="o">=</span> <span class="n">crossref_to_db</span><span class="p">(</span><span class="n">table_file</span><span class="o">=</span><span class="n">file_lookup_table</span><span class="p">,</span>
@@ -1746,8 +1777,8 @@
                                         <span class="n">num_compounds</span><span class="o">=</span><span class="n">num_compounds</span><span class="p">,</span>
                                         <span class="n">scan_list</span><span class="o">=</span><span class="n">scan_list</span><span class="p">,</span>
                                         <span class="n">save_scan_list</span><span class="o">=</span><span class="n">pass_scans</span><span class="p">,</span>
-                                        <span class="n">scan_metadata</span><span class="o">=</span><span class="n">scan_metadata</span> <span class="k">if</span> <span class="n">pass_meta</span> <span class="k">else</span> <span class="p">{},</span>
-                                        <span class="n">experiment_metadata</span><span class="o">=</span><span class="n">experiment_metadata</span> <span class="k">if</span> <span class="n">pass_meta</span> <span class="k">else</span> <span class="p">{},</span>
+                                        <span class="n">scan_metadata</span><span class="o">=</span><span class="n">scan_metadata</span> <span class="k">if</span> <span class="n">pass_scanmeta</span> <span class="k">else</span> <span class="p">{},</span>
+                                        <span class="n">experiment_metadata</span><span class="o">=</span><span class="n">experiment_metadata</span> <span class="k">if</span> <span class="n">pass_scanmeta</span> <span class="k">else</span> <span class="p">{},</span>
                                         <span class="n">compound_metadata</span><span class="o">=</span><span class="n">compound_metadata</span><span class="p">,</span>
                                         <span class="n">file_lookup_table</span><span class="o">=</span><span class="n">file_lookup_table</span><span class="p">,</span>
                                         <span class="n">mpi_comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span>
@@ -1765,73 +1796,6 @@
 </div>
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="n">main</span><span class="p">(</span><span class="n">use_command_line</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-
-
-<span class="c"># Save the data to file if necessary</span>
-<span class="c"># if output_filepath is not None and mpi_helper.get_rank() == mpi_root:</span>
-<span class="c">#     # Compile the output data for storage to HDF5 and sort the values to match the input order</span>
-<span class="c">#     output_data = {&#39;scan_index&#39;: results[0]}</span>
-<span class="c">#     output_data[&#39;score&#39;] = results[1][output_data[&#39;scan_index&#39;]]</span>
-<span class="c">#     output_data[&#39;id_data&#39;] = results[2][output_data[&#39;scan_index&#39;]]</span>
-<span class="c">#     output_data[&#39;name&#39;] = results[3][output_data[&#39;scan_index&#39;]]</span>
-<span class="c">#     output_data[&#39;mass&#39;] = results[4][output_data[&#39;scan_index&#39;]]</span>
-<span class="c">#     output_data[&#39;n_peaks&#39;] = results[5][output_data[&#39;scan_index&#39;]]</span>
-<span class="c">#     output_data[&#39;n_match&#39;] = results[6][output_data[&#39;scan_index&#39;]]</span>
-<span class="c">#     output_data[&#39;id_data&#39;] = results[2][output_data[&#39;scan_index&#39;]]</span>
-<span class="c">#     if not pass_meta:</span>
-<span class="c">#         scan_metadata = {}</span>
-<span class="c">#         experiment_metadata = {}</span>
-<span class="c">#</span>
-<span class="c">#     # Write the data to HDF5</span>
-<span class="c">#     write_results_hdf5(filepath=output_filepath,</span>
-<span class="c">#                        groupath=output_grouppath,</span>
-<span class="c">#                        output_data=output_data,</span>
-<span class="c">#                        scan_metadata=scan_metadata,</span>
-<span class="c">#                        experiment_metadata=experiment_metadata)</span>
-
-<span class="c"># def write_results_hdf5(filepath,</span>
-<span class="c">#                        groupath,</span>
-<span class="c">#                        output_data,</span>
-<span class="c">#                        scan_meta=None,</span>
-<span class="c">#                        experiment_meta=None):</span>
-<span class="c">#     &quot;&quot;&quot;</span>
-<span class="c">#     Write the results to file</span>
-<span class="c">#</span>
-<span class="c">#     :param filepath: The path to the HDF5 file ot be used</span>
-<span class="c">#     :param groupath: The path to the group to be used</span>
-<span class="c">#     :param output_data: Dictionary of the output data. Keys are dataset names and values are numpy data arrays.</span>
-<span class="c">#     :param scan_meta: Dictionary of scan metadata. Keys are dataset names and values are numpy data arrays.</span>
-<span class="c">#     :param experiment_meta: Dictionary of the experiment metadata. Keys are dataset names and values are</span>
-<span class="c">#            numpy data arrays.</span>
-<span class="c">#</span>
-<span class="c">#     &quot;&quot;&quot;</span>
-<span class="c">#     # Open the file</span>
-<span class="c">#     infile = h5py.File(filepath, &#39;a&#39;)</span>
-<span class="c">#     # Get the target group or create the required group(s) if necessary</span>
-<span class="c">#     try:</span>
-<span class="c">#         target = infile[groupath]</span>
-<span class="c">#     except KeyError:</span>
-<span class="c">#         current_group = infile[&#39;/&#39;]   # Split the path into the hiearchy of subgroups to be used.</span>
-<span class="c">#         # Creat all subgroups</span>
-<span class="c">#         for subgroup in groupath.split(&#39;/&#39;):</span>
-<span class="c">#             current_group = current_group.require_group(subgroup)</span>
-<span class="c">#         target = current_group</span>
-<span class="c">#     # Write all data arrays, one after the other</span>
-<span class="c">#     for key, value in output_data.iteritems():</span>
-<span class="c">#         target[key] = value</span>
-<span class="c">#         infile.flush()</span>
-<span class="c">#     if scan_meta is not None:</span>
-<span class="c">#         scan_group = target.require_group(&#39;scan_metadata&#39;)</span>
-<span class="c">#         for key, value in scan_meta.iteritems():</span>
-<span class="c">#             scan_group[key] = value</span>
-<span class="c">#             infile.flush()</span>
-<span class="c">#     if experiment_meta is not None:</span>
-<span class="c">#         experiment_group = target.require_group(&#39;experiment_metadata&#39;)</span>
-<span class="c">#         for key, value in experiment_meta.iteritems():</span>
-<span class="c">#             experiment_group[key] = value</span>
-<span class="c">#             infile.flush()</span>
-<span class="c">#</span>
-<span class="c">#     infile.close()</span>
 </pre></div>
 
           </div>
