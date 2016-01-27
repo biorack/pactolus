@@ -636,10 +636,13 @@ Default value is False.</li>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">match_matrix     Optional output that is only returned if want_match_matrix is set to True.
-List of lists of match matrices (one matrix per scan). Each entry is a bool matrix
-with n_peaks columns and n_nodes rows. Elements are True if given peak matches given
-node of frag_dag. An entry will be None in case that the hit-score was 0. The return
-value will be None if want_match_matrix is set to False (Default)</p>
+Dictionary of  match matrices (one matrix per non-zero score for a given scan and
+compound combination). The keys are tuples of integers describing the index of
+scan and compound in the returned score_matrix.
+Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
+if given peak matches given node of frag_dag. An entry will be None in case that
+the hit-score was 0. The return value will be None if want_match_matrix is set
+to False (Default)</p>
 </td>
 </tr>
 </tbody>

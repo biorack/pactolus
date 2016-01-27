@@ -136,6 +136,8 @@
 <span class="c"># TODO In the new setup we compile the ouput as indipendent arrays (rather than as a HIT_TABLE). Should we remove the HIT_TABLE functionality?</span>
 <span class="c"># TODO Test that everything is working</span>
 <span class="c"># TODO Add description of the HDF5 format used to store fragmentation trees to the documentation</span>
+<span class="c"># TODO Need to test score_peakcube_against_trees(...) after the numerous changes we have made</span>
+<span class="c"># TODO Parallelize score_peakcube_against_trees(...)</span>
 
 <span class="c"># FIXED: max_depth parameter was not passed to the scoring function in neither score_scan_list_against_trees nor score_peak_cube_against_trees</span>
 <span class="c"># FIXED: Updated score_scan_list_against_trees nor score_peak_cube_against_trees functions to replace the params dict with explicit input parameters</span>
@@ -472,10 +474,13 @@
 
 <span class="sd">    :return: score_cube       a numpy ndarray of shape (nx, ..., len(file_lookup_table))</span>
 <span class="sd">    :return: match_matrix     Optional output that is only returned if want_match_matrix is set to True.</span>
-<span class="sd">                              List of lists of match matrices (one matrix per scan). Each entry is a bool matrix</span>
-<span class="sd">                              with n_peaks columns and n_nodes rows. Elements are True if given peak matches given</span>
-<span class="sd">                              node of frag_dag. An entry will be None in case that the hit-score was 0. The return</span>
-<span class="sd">                              value will be None if want_match_matrix is set to False (Default)</span>
+<span class="sd">                              Dictionary of  match matrices (one matrix per non-zero score for a given scan and</span>
+<span class="sd">                              compound combination). The keys are tuples of integers describing the index of</span>
+<span class="sd">                              scan and compound in the returned score_matrix.</span>
+<span class="sd">                              Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True</span>
+<span class="sd">                              if given peak matches given node of frag_dag. An entry will be None in case that</span>
+<span class="sd">                              the hit-score was 0. The return value will be None if want_match_matrix is set</span>
+<span class="sd">                              to False (Default)</span>
 
 
 <span class="sd">    Unlike score_scan_list_against_trees, this function is designed to work on numpy arrays of scans.  It is more</span>
@@ -503,7 +508,7 @@
     <span class="n">score_cube</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_coordinates</span><span class="p">,</span> <span class="n">n_compounds</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
 
     <span class="c"># Initalize the match matrix</span>
-    <span class="n">match_matrix</span> <span class="o">=</span> <span class="bp">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">want_match_matrix</span> <span class="k">else</span> <span class="p">([[</span><span class="bp">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_compounds</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_coordinates</span><span class="p">)</span>
+    <span class="n">match_matrix_dict</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="c"># figure files to score</span>
     <span class="n">file_idxs</span> <span class="o">=</span> <span class="p">[]</span>
@@ -534,14 +539,14 @@
                                                                     <span class="n">max_depth</span><span class="o">=</span><span class="n">max_depth</span><span class="p">,</span>
                                                                     <span class="n">want_match_matrix</span><span class="o">=</span><span class="n">want_match_matrix</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">want_match_matrix</span><span class="p">:</span>
-                <span class="n">match_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_matrix</span>
+                <span class="n">match_matrix_dict</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span><span class="n">idx</span><span class="p">)]</span> <span class="o">=</span> <span class="n">temp_matrix</span>
 
     <span class="c"># Compute the shape the score cube should have when we return it</span>
     <span class="c"># Alternatively one could e.g. do tuple(list(spatial_dimensions) + [n_compounds,])</span>
     <span class="n">score_cube_shape</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">((</span><span class="n">spatial_dimensions</span><span class="p">,</span> <span class="p">(</span><span class="n">n_compounds</span><span class="p">,)),</span> <span class="p">())</span>
 
     <span class="k">if</span> <span class="n">want_match_matrix</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">score_cube</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">score_cube_shape</span><span class="p">),</span> <span class="n">match_matrix</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">score_cube_shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">score_cube</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">score_cube_shape</span><span class="p">),</span> <span class="n">match_matrix_dict</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">score_cube</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">score_cube_shape</span><span class="p">),</span> <span class="bp">None</span>
 
