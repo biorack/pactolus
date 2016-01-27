@@ -73,7 +73,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../data_formats.html#scan-spectrum-data-format-score-frag-dag">Scan/Spectrum data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../data_formats.html#scoring-temporary-output-data-format-score-frag-dag">Scoring temporary output data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../data_formats.html#scoring-main-output-data-format-score-frag-dag">Scoring main output data format (score_frag_dag)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../data_formats.html#tree-file-lookup-table-data-format-score-frag-dag">Tree file Lookup table data format (score_frag_dag)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../data_formats.html#tree-file-lookup-table-data-format-score-frag-dag">Tree file lookup table data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../data_formats.html#fragementation-tree-data-format-generate-frag-dag">Fragementation tree data format (generate_frag_dag)</a></li>
 </ul>
 </li>
@@ -139,7 +139,7 @@
 
 <span class="c"># FIXED: max_depth parameter was not passed to the scoring function in neither score_scan_list_against_trees nor score_peak_cube_against_trees</span>
 <span class="c"># FIXED: Updated score_scan_list_against_trees nor score_peak_cube_against_trees functions to replace the params dict with explicit input parameters</span>
-<span class="c"># FIXED: Allow return of match matrix</span>
+<span class="c"># FIXED: Allow return of match matrix when scoring many scans. The data is returned as a sparse dict so that we only store data for non-zero scores.</span>
 <span class="c"># FIXED: Allow metadata to passed through the main function</span>
 <span class="c"># FIXED: The created hittable conained always 0 for the number of peaks and number of matched peaks (because the match matrix was required but not returned and not set as input)</span>
 <span class="c"># FIXED:  calculate_MIDAS_score the calculation of the nodes to be used when max_depth was specified had a bug no.where[...] was an illegal expression</span>
@@ -343,6 +343,7 @@
 <span class="sd">    :return:                    score, float, a MIDAS score</span>
 <span class="sd">    :return:                    match_matrix, a bool matrix with n_peaks columns and n_nodes rows.</span>
 <span class="sd">                                              elements are True if given peak matches given node of frag_dag</span>
+<span class="sd">                                              Returned only if want_match_matrix is True, othewise None is returned.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c"># attempt to truncate tree if max_depth is supplied</span>
@@ -387,7 +388,7 @@
     <span class="k">if</span> <span class="n">want_match_matrix</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">score</span><span class="p">,</span> <span class="n">match_matrix</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">score</span>
+        <span class="k">return</span> <span class="n">score</span><span class="p">,</span> <span class="bp">None</span>
 
 </div>
 <div class="viewcode-block" id="make_file_lookup_table_by_MS1_mass"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass">[docs]</a><span class="k">def</span> <span class="nf">make_file_lookup_table_by_MS1_mass</span><span class="p">(</span><span class="n">tree_files</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">save_result</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
@@ -526,20 +527,14 @@
             <span class="k">if</span> <span class="n">intensities</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">continue</span>  <span class="c"># if all peaks are 0 intensity (e.g. masked data) skip scoring algo and keep score at 0</span>
             <span class="n">mz_intensity_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">mzs</span><span class="p">,</span> <span class="n">intensities</span><span class="p">])</span>
+            <span class="n">score_cube</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">idx</span><span class="p">],</span> <span class="n">temp_matrix</span> <span class="o">=</span> <span class="n">calculate_MIDAS_score</span><span class="p">(</span><span class="n">mz_intensity_arr</span><span class="p">,</span>
+                                                                    <span class="n">tree</span><span class="p">,</span>
+                                                                    <span class="n">mass_tol</span><span class="o">=</span><span class="n">ms2_mass_tol</span><span class="p">,</span>
+                                                                    <span class="n">neutralizations</span><span class="o">=</span><span class="n">neutralizations</span><span class="p">,</span>
+                                                                    <span class="n">max_depth</span><span class="o">=</span><span class="n">max_depth</span><span class="p">,</span>
+                                                                    <span class="n">want_match_matrix</span><span class="o">=</span><span class="n">want_match_matrix</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">want_match_matrix</span><span class="p">:</span>
-                <span class="n">score_cube</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">idx</span><span class="p">],</span> <span class="n">match_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">calculate_MIDAS_score</span><span class="p">(</span><span class="n">mz_intensity_arr</span><span class="p">,</span>
-                                                                                 <span class="n">tree</span><span class="p">,</span>
-                                                                                 <span class="n">mass_tol</span><span class="o">=</span><span class="n">ms2_mass_tol</span><span class="p">,</span>
-                                                                                 <span class="n">neutralizations</span><span class="o">=</span><span class="n">neutralizations</span><span class="p">,</span>
-                                                                                 <span class="n">max_depth</span><span class="o">=</span><span class="n">max_depth</span><span class="p">,</span>
-                                                                                 <span class="n">want_match_matrix</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">score_cube</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">calculate_MIDAS_score</span><span class="p">(</span><span class="n">mz_intensity_arr</span><span class="p">,</span>
-                                                           <span class="n">tree</span><span class="p">,</span>
-                                                           <span class="n">mass_tol</span><span class="o">=</span><span class="n">ms2_mass_tol</span><span class="p">,</span>
-                                                           <span class="n">neutralizations</span><span class="o">=</span><span class="n">neutralizations</span><span class="p">,</span>
-                                                           <span class="n">max_depth</span><span class="o">=</span><span class="n">max_depth</span><span class="p">,</span>
-                                                           <span class="n">want_match_matrix</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="n">match_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_matrix</span>
 
     <span class="c"># Compute the shape the score cube should have when we return it</span>
     <span class="c"># Alternatively one could e.g. do tuple(list(spatial_dimensions) + [n_compounds,])</span>
@@ -559,7 +554,7 @@
                                          <span class="n">ms2_mass_tol</span><span class="p">,</span>
                                          <span class="n">max_depth</span><span class="p">,</span>
                                          <span class="n">want_match_matrix</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                                         <span class="n">scan_indexes</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                         <span class="n">scan_indexes</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                                          <span class="n">temp_out_group</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                                          <span class="n">mpi_root</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                                          <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
@@ -588,7 +583,7 @@
 <span class="sd">                                Default value is False.</span>
 
 <span class="sd">    :param scan_indexes: Optional 1D array or list of integer indices for the scans. Used to identify scans</span>
-<span class="sd">        for logging. Default value is None.</span>
+<span class="sd">        for logging. Default value is None in which case range(n_scans) will be used as scan_indexes.</span>
 
 <span class="sd">    :param temp_out_group: HDF5 group where the results from this run should temporarily be stored. If given, then</span>
 <span class="sd">        the results for each scan will be written to a group &#39;scan_#&#39; which in turn contains the following</span>
@@ -605,8 +600,10 @@
 
 <span class="sd">    :return: score_matrix     a numpy ndarray of shape (n_scans, len(file_lookup_table))</span>
 <span class="sd">    :return: match_matrix     Optional output that is only returned if want_match_matrix is set to True.</span>
-<span class="sd">                              List of lists of match matrices (one matrix per scan and compound combination).</span>
-<span class="sd">                              Each entry is a bool matrix with n_peaks columns and n_nodes rows. Elements are True</span>
+<span class="sd">                              Dictionary of  match matrices (one matrix per non-zero score for a given scan and</span>
+<span class="sd">                              compound combination). The keys are tuples of integers describing the index of</span>
+<span class="sd">                              scan and compound in the returned score_matrix.</span>
+<span class="sd">                              Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True</span>
 <span class="sd">                              if given peak matches given node of frag_dag. An entry will be None in case that</span>
 <span class="sd">                              the hit-score was 0. The return value will be None if want_match_matrix is set</span>
 <span class="sd">                              to False (Default)</span>
@@ -641,7 +638,7 @@
 
     <span class="c"># initialize output variable score_matrix</span>
     <span class="n">score_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_scans</span><span class="p">,</span> <span class="n">n_compounds</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-    <span class="n">match_matrix</span> <span class="o">=</span> <span class="bp">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">want_match_matrix</span> <span class="k">else</span> <span class="p">([[</span><span class="bp">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_compounds</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_scans</span><span class="p">)</span>
+    <span class="n">match_matrix_dict</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="c"># cannot assume common parent for all scans; must loop over scans first</span>
     <span class="c"># if this part is slow it can be improved by grouping/clustering scans by common precursor first</span>
@@ -652,7 +649,7 @@
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Scans must be numpy arrays with a row for each peak, and *only* two columns&#39;</span><span class="p">)</span>
 
         <span class="c"># figure files to score</span>
-        <span class="n">file_idxs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">file_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">ion_loss</span> <span class="ow">in</span> <span class="n">neutralizations</span><span class="p">:</span>
             <span class="n">ms1_mass</span> <span class="o">=</span> <span class="n">ms1_mz</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">ion_loss</span>
             <span class="n">mass_difference</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">file_lookup_table</span><span class="p">[</span><span class="s">&#39;ms1_mass&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">ms1_mass</span><span class="p">)</span>
@@ -667,21 +664,16 @@
             <span class="n">group_key</span> <span class="o">=</span> <span class="n">file_reader</span><span class="o">.</span><span class="n">keys</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">data_key</span> <span class="o">=</span> <span class="n">file_reader</span><span class="p">[</span><span class="n">group_key</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">tree</span> <span class="o">=</span> <span class="n">file_reader</span><span class="p">[</span><span class="n">group_key</span><span class="p">][</span><span class="n">data_key</span><span class="p">][:]</span>
+            <span class="n">score_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">idx</span><span class="p">],</span> <span class="n">temp_matrix</span> <span class="o">=</span> <span class="n">calculate_MIDAS_score</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span>
+                                                                      <span class="n">tree</span><span class="p">,</span>
+                                                                      <span class="n">mass_tol</span><span class="o">=</span><span class="n">ms2_mass_tol</span><span class="p">,</span>
+                                                                      <span class="n">neutralizations</span><span class="o">=</span><span class="n">neutralizations</span><span class="p">,</span>
+                                                                      <span class="n">max_depth</span><span class="o">=</span><span class="n">max_depth</span><span class="p">,</span>
+                                                                      <span class="n">want_match_matrix</span><span class="o">=</span><span class="n">want_match_matrix</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">want_match_matrix</span><span class="p">:</span>
-                <span class="n">score_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">idx</span><span class="p">],</span> <span class="n">match_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">calculate_MIDAS_score</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span>
-                                                                                   <span class="n">tree</span><span class="p">,</span>
-                                                                                   <span class="n">mass_tol</span><span class="o">=</span><span class="n">ms2_mass_tol</span><span class="p">,</span>
-                                                                                   <span class="n">neutralizations</span><span class="o">=</span><span class="n">neutralizations</span><span class="p">,</span>
-                                                                                   <span class="n">max_depth</span><span class="o">=</span><span class="n">max_depth</span><span class="p">,</span>
-                                                                                   <span class="n">want_match_matrix</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">score_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">calculate_MIDAS_score</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span>
-                                                             <span class="n">tree</span><span class="p">,</span>
-                                                             <span class="n">mass_tol</span><span class="o">=</span><span class="n">ms2_mass_tol</span><span class="p">,</span>
-                                                             <span class="n">neutralizations</span><span class="o">=</span><span class="n">neutralizations</span><span class="p">,</span>
-                                                             <span class="n">max_depth</span><span class="o">=</span><span class="n">max_depth</span><span class="p">,</span>
-                                                             <span class="n">want_match_matrix</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
-        <span class="n">number_of_hits</span> <span class="o">=</span> <span class="p">(</span><span class="n">score_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">idx</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+                <span class="n">match_matrix_dict</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span><span class="n">idx</span><span class="p">)]</span> <span class="o">=</span> <span class="n">temp_matrix</span>
+
+        <span class="n">number_of_hits</span> <span class="o">=</span> <span class="p">(</span><span class="n">score_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
 
         <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="n">execution_time</span> <span class="o">=</span> <span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span>
@@ -695,16 +687,22 @@
         <span class="c"># Save the score_matrix and match_matrix data if requested</span>
         <span class="k">if</span> <span class="n">temp_out_group</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">score_data_group</span> <span class="o">=</span> <span class="n">temp_out_group</span><span class="o">.</span><span class="n">require_group</span><span class="p">(</span><span class="s">&#39;scan_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">scan_indexes</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
-            <span class="n">score_data_group</span><span class="p">[</span><span class="s">&#39;score_matrix&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">score_matrix</span>
+            <span class="n">score_data_group</span><span class="p">[</span><span class="s">&#39;score_matrix&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">score_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span>
             <span class="k">if</span> <span class="n">want_match_matrix</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">compound_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_compounds</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="n">match_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">compound_index</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-                        <span class="n">match_matrix_dataset_name</span> <span class="o">=</span> <span class="s">&#39;match_matrix_</span><span class="si">%i</span><span class="s">_</span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">scan_indexes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">compound_index</span><span class="p">)</span>
-                        <span class="n">score_data_group</span><span class="p">[</span><span class="n">match_matrix_dataset_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">match_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">compound_index</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">compound_index</span><span class="p">)</span> <span class="ow">in</span> <span class="n">match_matrix_dict</span><span class="p">:</span>
+                        <span class="c"># Create the match matrix dataset</span>
+                        <span class="n">score_data_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;match_matrix_</span><span class="si">%i</span><span class="s">_</span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">scan_indexes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">compound_index</span><span class="p">),</span>
+                                                        <span class="n">data</span><span class="o">=</span><span class="n">match_matrix_dict</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span> <span class="n">compound_index</span><span class="p">)],</span>
+                                                        <span class="n">chunks</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                                        <span class="n">fillvalue</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                                        <span class="n">compression</span><span class="o">=</span><span class="s">&#39;gzip&#39;</span><span class="p">,</span>
+                                                        <span class="n">compression_opts</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
             <span class="n">temp_out_group</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">want_match_matrix</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">score_matrix</span><span class="p">,</span> <span class="n">match_matrix</span>
+        <span class="k">return</span> <span class="n">score_matrix</span><span class="p">,</span> <span class="n">match_matrix_dict</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">score_matrix</span><span class="p">,</span> <span class="bp">None</span>
 
@@ -925,7 +923,7 @@
     <span class="n">input_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="c"># Return the data</span>
-    <span class="k">return</span> <span class="n">scan_list</span><span class="p">,</span> <span class="n">ms1_mz</span><span class="p">,</span> <span class="n">scan_metadata</span><span class="p">,</span> <span class="n">experiment_metadata</span>
+    <span class="k">return</span> <span class="n">scan_list</span><span class="p">,</span> <span class="n">scan_metadata</span><span class="p">,</span> <span class="n">experiment_metadata</span>
 
 </div>
 <div class="viewcode-block" id="load_file_lookup_table"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.load_file_lookup_table">[docs]</a><span class="k">def</span> <span class="nf">load_file_lookup_table</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
@@ -994,8 +992,11 @@
 <span class="sd">             * `schedule` : The scheduling scheme to be used</span>
 <span class="sd">             * `collect` : Boolean defining whether the results should be collected to rank 0 in parallel</span>
 <span class="sd">             * `loglevel` : String indicating the logging level to be used</span>
-<span class="sd">             * `temppath` : Path basename where temporary data files should be stored. Temporary files are created \</span>
+<span class="sd">             * `tempdir` : Directory where temporary data files should be stored. Temporary files are created \</span>
 <span class="sd">                           one-per-core to incrementally save the results of an analysis.</span>
+<span class="sd">            * `clean_tempdir` : &quot;Boolean indicating whether we should automatically delete conflicting data in tempdir</span>
+<span class="sd">            * `clean_output` : Boolean indicating whether we should automatically delete conflicting data in the \</span>
+<span class="sd">                    output target defined by --save.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">dtypes</span> <span class="o">=</span> <span class="n">data_dtypes</span><span class="o">.</span><span class="n">get_dtypes</span><span class="p">()</span>
@@ -1162,20 +1163,38 @@
                                          <span class="n">action</span><span class="o">=</span><span class="s">&quot;store&quot;</span><span class="p">,</span>
                                          <span class="n">default</span><span class="o">=</span><span class="s">&quot;INFO&quot;</span><span class="p">,</span>
                                          <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                                         <span class="n">choices</span><span class="o">=</span><span class="n">log_helper</span><span class="o">.</span><span class="n">log_levels</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-    <span class="n">optional_argument_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--tempath&quot;</span><span class="p">,</span>
-                                         <span class="n">help</span><span class="o">=</span><span class="s">&quot;Path basename where temporary data files should be stored. &quot;</span> <span class="o">+</span>
+                                         <span class="n">choices</span><span class="o">=</span><span class="n">log_helper</span><span class="o">.</span><span class="n">log_levels</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+                                         <span class="n">dest</span><span class="o">=</span><span class="s">&#39;loglevel&#39;</span><span class="p">)</span>
+    <span class="n">optional_argument_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--tempdir&quot;</span><span class="p">,</span>
+                                         <span class="n">help</span><span class="o">=</span><span class="s">&quot;Directory where temporary data files should be stored. &quot;</span> <span class="o">+</span>
                                               <span class="s">&quot;Temporary files are created one-per-core to incrementally &quot;</span> <span class="o">+</span>
-                                              <span class="s">&quot;save the results of an analysis. If not given, then a temp-dir&quot;</span> <span class="o">+</span>
-                                              <span class="s">&quot;will be created automatically.&quot;</span><span class="p">,</span>
+                                              <span class="s">&quot;save the results of an analysis. If not given, then a tempfiles&quot;</span> <span class="o">+</span>
+                                              <span class="s">&quot;will be created automatically if needed (i.e., if --save is set).&quot;</span> <span class="o">+</span>
+                                              <span class="s">&quot;Temporary files will removed after completion if --save is set.&quot;</span><span class="p">,</span>
                                          <span class="nb">type</span><span class="o">=</span><span class="n">dtypes</span><span class="p">[</span><span class="s">&#39;str&#39;</span><span class="p">],</span>
                                          <span class="n">action</span><span class="o">=</span><span class="s">&quot;store&quot;</span><span class="p">,</span>
                                          <span class="n">default</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span>
                                          <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                                         <span class="n">choices</span><span class="o">=</span><span class="n">log_helper</span><span class="o">.</span><span class="n">log_levels</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                                         <span class="n">dest</span><span class="o">=</span><span class="s">&#39;tempdir&#39;</span><span class="p">)</span>
+    <span class="n">optional_argument_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--clean_tempdir&quot;</span><span class="p">,</span>
+                                         <span class="n">help</span><span class="o">=</span><span class="s">&quot;Boolean indicating whether we should automatically delete &quot;</span> <span class="o">+</span>
+                                              <span class="s">&quot;conflicting data in the tempdir.&quot;</span><span class="p">,</span>
+                                         <span class="n">action</span><span class="o">=</span><span class="s">&quot;store&quot;</span><span class="p">,</span>
+                                         <span class="nb">type</span><span class="o">=</span><span class="n">dtypes</span><span class="p">[</span><span class="s">&quot;bool&quot;</span><span class="p">],</span>
+                                         <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                         <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                         <span class="n">dest</span><span class="o">=</span><span class="s">&quot;clean_tempdir&quot;</span><span class="p">)</span>
+    <span class="n">optional_argument_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&quot;--clean_output&quot;</span><span class="p">,</span>
+                                         <span class="n">help</span><span class="o">=</span><span class="s">&quot;Boolean indicating whether we should automatically delete &quot;</span> <span class="o">+</span>
+                                              <span class="s">&quot;conflicting data in the output target defined by --save&quot;</span><span class="p">,</span>
+                                         <span class="n">action</span><span class="o">=</span><span class="s">&quot;store&quot;</span><span class="p">,</span>
+                                         <span class="nb">type</span><span class="o">=</span><span class="n">dtypes</span><span class="p">[</span><span class="s">&quot;bool&quot;</span><span class="p">],</span>
+                                         <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                         <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                         <span class="n">dest</span><span class="o">=</span><span class="s">&quot;clean_output&quot;</span><span class="p">)</span>
 
     <span class="c"># Parse the command line arguments</span>
-    <span class="n">command_line_args</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_known_args</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">command_line_args</span> <span class="o">=</span>  <span class="nb">vars</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">())</span>  <span class="c"># vars(parser.parse_known_args()[0])</span>
 
     <span class="c"># Add the filepath and grouppath values based on the the --input argument value</span>
     <span class="n">input_path</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;input&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">)</span>
@@ -1221,7 +1240,6 @@
                                   <span class="n">max_depth</span><span class="p">,</span>
                                   <span class="n">want_match_matrix</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                                   <span class="n">temp_out_group</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                                  <span class="n">collect</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                                   <span class="n">schedule</span><span class="o">=</span><span class="n">mpi_helper</span><span class="o">.</span><span class="n">parallel_over_axes</span><span class="o">.</span><span class="n">SCHEDULES</span><span class="p">[</span><span class="s">&#39;DYNAMIC&#39;</span><span class="p">],</span>
                                   <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                                   <span class="n">mpi_root</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
@@ -1252,7 +1270,8 @@
                 <span class="n">ms2_mass_tol</span><span class="o">=</span><span class="n">ms2_mass_tol</span><span class="p">,</span>
                 <span class="n">max_depth</span><span class="o">=</span><span class="n">max_depth</span><span class="p">,</span>
                 <span class="n">want_match_matrix</span><span class="o">=</span><span class="n">want_match_matrix</span><span class="p">,</span>
-                <span class="n">temp_out_group</span><span class="o">=</span><span class="n">temp_out_group</span><span class="p">)</span>
+                <span class="n">temp_out_group</span><span class="o">=</span><span class="n">temp_out_group</span><span class="p">,</span>
+                <span class="n">scan_indexes</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">score_scan_list_against_trees_parallel</span><span class="p">(</span>
                 <span class="n">scan_list</span><span class="o">=</span><span class="n">scan_list</span><span class="p">,</span>
@@ -1491,8 +1510,15 @@
                 <span class="n">compound_index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match_matrix_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
                 <span class="n">match_matrix</span> <span class="o">=</span> <span class="n">scan_group</span><span class="p">[</span><span class="n">match_matrix_name</span><span class="p">][:]</span>
                 <span class="n">num_matched</span><span class="p">[</span><span class="n">scan_index</span><span class="p">,</span> <span class="n">compound_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">match_matrix</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-                <span class="n">output_group</span><span class="p">[</span><span class="n">match_matrix_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">match_matrix</span>
-                <span class="n">num_matched</span> <span class="o">=</span> <span class="n">scan_group</span><span class="p">[</span><span class="n">match_matrix_name</span><span class="p">][:]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+                <span class="c"># Create a compressed dataset for the match matrix</span>
+                <span class="n">match_matrix_dataset</span> <span class="o">=</span> <span class="n">output_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">match_matrix_name</span><span class="p">,</span>
+                                                                   <span class="n">data</span><span class="o">=</span><span class="n">match_matrix</span><span class="p">,</span>
+                                                                   <span class="n">chunks</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                                                   <span class="n">fillvalue</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                                                   <span class="n">compression</span><span class="o">=</span><span class="s">&#39;gzip&#39;</span><span class="p">,</span>
+                                                                   <span class="n">compression_opts</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+                <span class="c"># Write only the few elements that are True to avoid initialization of chunks with False only</span>
+                <span class="n">match_matrix_dataset</span><span class="p">[</span><span class="n">match_matrix</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
 
     <span class="c"># Save the number of matched peaks array if anything is available</span>
     <span class="k">if</span> <span class="n">num_matched</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
@@ -1514,10 +1540,12 @@
                                                <span class="n">compression_opts</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_scans</span><span class="p">):</span>
         <span class="n">scores</span> <span class="o">=</span> <span class="n">score_dataset</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span>
-        <span class="n">nonzero_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">scores</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">nonzero_scores_boolarr</span> <span class="o">=</span> <span class="n">scores</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="n">nonzero_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">nonzero_scores_boolarr</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">num_nonzero</span> <span class="o">=</span> <span class="n">nonzero_scores</span><span class="o">.</span><span class="n">size</span>
-        <span class="n">ranking</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">argsort</span><span class="p">()[::</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="n">num_nonzero</span><span class="p">]</span>
-        <span class="n">rank_dataset</span><span class="p">[</span><span class="n">nonzero_scores</span><span class="p">]</span> <span class="o">=</span> <span class="n">ranking</span>
+        <span class="k">if</span> <span class="n">num_nonzero</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">ranking</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">argsort</span><span class="p">()[::</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="n">num_nonzero</span><span class="p">]</span>
+            <span class="n">rank_dataset</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">nonzero_scores</span><span class="p">]</span> <span class="o">=</span> <span class="n">ranking</span>
 
     <span class="c"># Write the compound metadata</span>
     <span class="n">compound_metadata_group</span> <span class="o">=</span> <span class="n">output_group</span><span class="o">.</span><span class="n">require_group</span><span class="p">(</span><span class="s">&#39;compound_metadata&#39;</span><span class="p">)</span>
@@ -1545,11 +1573,12 @@
             <span class="n">output_file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 
     <span class="c"># Write the file look-up table if necessary</span>
-    <span class="k">if</span> <span class="n">file_lookup_table</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">file_lookup_table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
         <span class="n">output_group</span><span class="p">[</span><span class="s">&#39;tree_file_lookup_table&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">file_lookup_table</span>
 
     <span class="c"># Write the scan_list data if necessary</span>
-    <span class="k">if</span> <span class="n">scan_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">scan_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">save_scan_list</span><span class="p">:</span>
+        <span class="c"># Compile and save the scan/spectrum data</span>
         <span class="n">scan_group</span> <span class="o">=</span> <span class="n">output_group</span><span class="o">.</span><span class="n">require_group</span><span class="p">(</span><span class="s">&#39;scans&#39;</span><span class="p">)</span>
         <span class="n">scan_group</span><span class="p">[</span><span class="s">&#39;peak_mz&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="nb">tuple</span><span class="p">([</span><span class="n">ri</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">ri</span> <span class="ow">in</span> <span class="n">scan_list</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">scan_group</span><span class="p">[</span><span class="s">&#39;peak_value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="nb">tuple</span><span class="p">([</span><span class="n">ri</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">ri</span> <span class="ow">in</span> <span class="n">scan_list</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
@@ -1611,6 +1640,74 @@
 
     <span class="c"># return the compound metadata results</span>
     <span class="k">return</span> <span class="n">compound_metadata</span>
+</div>
+<div class="viewcode-block" id="check_scoring_output_targets"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.check_scoring_output_targets">[docs]</a><span class="k">def</span> <span class="nf">check_scoring_output_targets</span><span class="p">(</span><span class="n">output_filepath</span><span class="p">,</span>
+                                 <span class="n">output_grouppath</span><span class="p">,</span>
+                                 <span class="n">tempdir</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span>
+                                 <span class="n">cleanup_output</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                 <span class="n">cleanup_tempdir</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                 <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                 <span class="n">mpi_root</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check whether the locations we should use for writing are clean.</span>
+<span class="sd">    Optionally clean the locations by deleting any prior data.</span>
+
+<span class="sd">    :param output_filepath: The path to the file where scoring results should be written to</span>
+<span class="sd">    :param output_grouppath: The path to the group where scoring results should be written to</span>
+<span class="sd">    :param tempdir: The path of the temporary data location. Empty string is used to indicate that the default</span>
+<span class="sd">        tempdir and NamedTemporaryFiles will be used instead.</span>
+<span class="sd">    :param mpi_comm: The MPI communicator to be used when runnning in parallel</span>
+<span class="sd">    :param mpi_root: The root MPI process to be used</span>
+
+<span class="sd">    :return: output_clean boolean indicating whether the output target is clean</span>
+<span class="sd">    :return: tempdir_clean boolean indicating whether the temproary directory is clean</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">output_clean</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">tempdir_clean</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">if</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">get_rank</span><span class="p">(</span><span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">)</span> <span class="o">==</span> <span class="n">mpi_root</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">output_filepath</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">outfile</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">output_filepath</span><span class="p">,</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">outfile</span><span class="p">[</span><span class="n">output_grouppath</span><span class="p">]</span>
+                    <span class="n">output_clean</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="n">output_clean</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">output_clean</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">output_clean</span> <span class="ow">and</span> <span class="n">cleanup_output</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">output_filepath</span><span class="p">)</span>
+                    <span class="n">log_helper</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;Removed : &quot;</span> <span class="o">+</span> <span class="n">output_filepath</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+                    <span class="n">output_clean</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">log_helper</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;An error occured while trying to clean the output/save target&quot;</span><span class="p">,</span>
+                                         <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+                    <span class="n">output_clean</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tempdir</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tempdir</span><span class="p">):</span>
+                <span class="n">tempdir_clean</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">tempdir</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">tempobj</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">tempdir</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">tempobj</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.h5&#39;</span><span class="p">):</span>
+                        <span class="n">tempdir_clean</span> <span class="o">=</span> <span class="bp">False</span>
+                        <span class="k">break</span>
+                <span class="k">if</span> <span class="n">cleanup_tempdir</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">tempobj</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">tempdir</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="n">tempobj</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.h5&#39;</span><span class="p">):</span>
+                                <span class="n">delete_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tempdir</span><span class="p">,</span> <span class="n">tempobj</span><span class="p">)</span>
+                                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">delete_filename</span><span class="p">)</span>
+                                <span class="n">log_helper</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;Removed : &quot;</span> <span class="o">+</span> <span class="n">delete_filename</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+                        <span class="n">tempdir_clean</span> <span class="o">=</span> <span class="bp">True</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="n">log_helper</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;An error occured while trying to clean the tempdir&quot;</span><span class="p">,</span>
+                                         <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tempdir_clean</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">return</span> <span class="n">output_clean</span><span class="p">,</span> <span class="n">tempdir_clean</span>
+
 
 </div>
 <div class="viewcode-block" id="main"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">use_command_line</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -1619,7 +1716,7 @@
 
 <span class="sd">    :param use_command_line: Retrieve analysis settings from the command line</span>
 <span class="sd">    :param kwargs: Optional keyword arguments used to define all (or overwrite some) settings usually defined</span>
-<span class="sd">        via the command line. Optional keyqord arguments are:</span>
+<span class="sd">        via the command line. Optional keywqord arguments are:</span>
 
 <span class="sd">         * `input` : The full input path provided by the user</span>
 <span class="sd">         * `input_filepath` : The path to the input file</span>
@@ -1634,11 +1731,20 @@
 <span class="sd">         * `ms2_mass_tolerance` : The ms2 mass tolerance floating point value</span>
 <span class="sd">         * `max_depth` : The maximum search depth in the trees integer value</span>
 <span class="sd">         * `neutralizations` : Numpy array with floating point neutralization values</span>
-<span class="sd">         * `pass_scan_meta`: Boolean indicating whether we should pass additional metadata</span>
+<span class="sd">         * `pass_scanmeta`: Boolean indicating whether we should pass additional metadata through to the ouptut</span>
+<span class="sd">         * `pass_scans`: Boolean indicating whether the actual scan/spectra data should be passed through \</span>
+<span class="sd">                        to the output.</span>
+<span class="sd">         * `pass_compound_meta` : Boolean indicating whether we should compile compound metadata from the \</span>
+<span class="sd">                    tree file and pass it through to the output.</span>
 <span class="sd">         * `schedule` : The scheduling scheme to be used</span>
+<span class="sd">         * `collect` : Boolean defining whether the results should be collected to rank 0 in parallel</span>
 <span class="sd">         * `loglevel` : String indicating the logging level to be used</span>
-<span class="sd">         * `temppath` : Path basename where temporary data files should be stored. Temporary files are created \</span>
+<span class="sd">         * `tempdir` : Directory where temporary data files should be stored. Temporary files are created \</span>
 <span class="sd">                       one-per-core to incrementally save the results of an analysis.</span>
+<span class="sd">        * `clean_tempdir` : &quot;Boolean indicating whether we should automatically delete conflicting data in tempdir</span>
+<span class="sd">        * `clean_output` : Boolean indicating whether we should automatically delete conflicting data in the \</span>
+<span class="sd">                output target defined by --save.</span>
+
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">global</span> <span class="n">METACYC_DTYPE</span>
@@ -1674,14 +1780,35 @@
     <span class="n">pass_scanmeta</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;pass_scanmeta&#39;</span><span class="p">]</span>
     <span class="n">pass_scans</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;pass_scans&#39;</span><span class="p">]</span>
     <span class="n">loglevel</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;loglevel&#39;</span><span class="p">]</span>
-    <span class="n">temppath</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;temppath&#39;</span><span class="p">]</span>
+    <span class="n">tempdir</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;tempdir&#39;</span><span class="p">]</span>
+    <span class="n">clean_tempdir</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;clean_tempdir&#39;</span><span class="p">]</span>
+    <span class="n">clean_output</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;clean_output&#39;</span><span class="p">]</span>
     <span class="n">pass_compound_meta</span> <span class="o">=</span> <span class="n">command_line_args</span><span class="p">[</span><span class="s">&#39;pass_compound_meta&#39;</span><span class="p">]</span>
+
 
     <span class="c"># Set the log level</span>
     <span class="k">if</span> <span class="n">loglevel</span> <span class="ow">in</span> <span class="n">log_helper</span><span class="o">.</span><span class="n">log_levels</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
         <span class="n">log_helper</span><span class="o">.</span><span class="n">set_log_level</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">log_helper</span><span class="o">.</span><span class="n">log_levels</span><span class="p">[</span><span class="n">loglevel</span><span class="p">])</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">log_helper</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">module_name</span><span class="o">=</span><span class="n">__name__</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s">&quot;Invalid log level specified&quot;</span><span class="p">)</span>
+
+    <span class="c"># Ensure that the output is clean. This function handles the parallel case</span>
+    <span class="n">output_clean</span><span class="p">,</span> <span class="n">tempdir_clean</span> <span class="o">=</span> <span class="n">check_scoring_output_targets</span><span class="p">(</span><span class="n">output_filepath</span><span class="o">=</span><span class="n">output_filepath</span><span class="p">,</span>
+                                                               <span class="n">output_grouppath</span><span class="o">=</span><span class="n">output_grouppath</span><span class="p">,</span>
+                                                               <span class="n">tempdir</span><span class="o">=</span><span class="n">tempdir</span><span class="p">,</span>
+                                                               <span class="n">cleanup_output</span><span class="o">=</span><span class="n">clean_output</span><span class="p">,</span>
+                                                               <span class="n">cleanup_tempdir</span><span class="o">=</span><span class="n">clean_tempdir</span><span class="p">,</span>
+                                                               <span class="n">mpi_comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span>
+                                                               <span class="n">mpi_root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">output_clean</span><span class="p">:</span>
+        <span class="n">log_helper</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;The output target is not save for use (e.g. colliding data already exists): &quot;</span>
+                         <span class="o">+</span> <span class="n">output_filepath</span> <span class="o">+</span> <span class="s">&quot;:&quot;</span> <span class="o">+</span> <span class="n">output_grouppath</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+        <span class="nb">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">tempdir_clean</span><span class="p">:</span>
+        <span class="n">log_helper</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;The tempdir target is not save for use (e.g. colliding data already exists): &quot;</span>
+                         <span class="o">+</span> <span class="n">tempdir</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+        <span class="nb">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
 
     <span class="c"># Read the scan data from file</span>
     <span class="c"># TODO: Possibly optimize data load by reading only on the mpi root and then sending the data to all ranks via MPI</span>
@@ -1709,15 +1836,17 @@
 
     <span class="c"># Initalize the temporary output file</span>
     <span class="n">temp_out_group</span><span class="o">=</span><span class="bp">None</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">temppath</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">temppath</span><span class="p">):</span>
-            <span class="n">temp_out_file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">temppath</span><span class="p">,</span> <span class="s">&#39;pactolus_rankfile_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">mpi_helper</span><span class="o">.</span><span class="n">get_rank</span><span class="p">())</span> <span class="o">+</span> <span class="s">&quot;.h5&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tempdir</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">tempdir</span><span class="p">):</span>
+            <span class="n">temp_out_file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tempdir</span><span class="p">,</span> <span class="s">&#39;pactolus_rankfile_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">mpi_helper</span><span class="o">.</span><span class="n">get_rank</span><span class="p">())</span> <span class="o">+</span> <span class="s">&quot;.h5&quot;</span><span class="p">))</span>
             <span class="n">temp_out_group</span> <span class="o">=</span> <span class="n">temp_out_file</span><span class="p">[</span><span class="s">&#39;/&#39;</span><span class="p">]</span>
+        <span class="n">cleanup_temporary_files</span> <span class="o">=</span> <span class="n">output_filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
     <span class="k">elif</span> <span class="n">output_filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
         <span class="c"># Create a NamedTempory file that will be deleted automaticaly at the end of the run</span>
         <span class="n">local_tempfile</span> <span class="o">=</span> <span class="n">NamedTemporaryFile</span><span class="p">()</span>
         <span class="n">temp_out_file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">local_tempfile</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
         <span class="n">temp_out_group</span> <span class="o">=</span> <span class="n">temp_out_file</span><span class="p">[</span><span class="s">&#39;/&#39;</span><span class="p">]</span>
+        <span class="n">cleanup_temporary_files</span> <span class="o">=</span> <span class="bp">False</span>
 
     <span class="c"># Score the scans</span>
     <span class="n">log_helper</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;Starting the scoring process&quot;</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
@@ -1728,7 +1857,6 @@
                                             <span class="n">ms2_mass_tol</span><span class="o">=</span><span class="n">ms2_mass_tol</span><span class="p">,</span>
                                             <span class="n">ms1_mass_tol</span><span class="o">=</span><span class="n">ms1_mass_tol</span><span class="p">,</span>
                                             <span class="n">max_depth</span><span class="o">=</span><span class="n">max_depth</span><span class="p">,</span>
-                                            <span class="n">metabolite_database</span><span class="o">=</span><span class="n">metabolite_database</span><span class="p">,</span>
                                             <span class="n">temp_out_group</span><span class="o">=</span><span class="n">temp_out_group</span><span class="p">,</span>
                                             <span class="n">want_match_matrix</span><span class="o">=</span><span class="n">match_matrix</span><span class="p">,</span>
                                             <span class="n">schedule</span><span class="o">=</span><span class="n">schedule</span><span class="p">,</span>
@@ -1755,11 +1883,10 @@
                              <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">)</span>
 
     <span class="c"># Compile the results from all output files to the output file if requested</span>
-    <span class="n">cleanup_temporary_files</span> <span class="o">=</span> <span class="bp">False</span>
     <span class="k">if</span> <span class="n">output_filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
         <span class="n">log_helper</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&#39;Collecting results from the temporary files&#39;</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
         <span class="c"># Collect the list of temporary files we need to read</span>
-        <span class="n">all_tempfile_names</span> <span class="o">=</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">temp_out_group</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+        <span class="n">all_tempfile_names</span> <span class="o">=</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">temp_out_group</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
         <span class="c"># Compile the scan data if we should pass it through as well</span>
         <span class="c">#scan_data = {}</span>
         <span class="c">#if pass_sepctra:</span>
@@ -1783,16 +1910,17 @@
                                         <span class="n">file_lookup_table</span><span class="o">=</span><span class="n">file_lookup_table</span><span class="p">,</span>
                                         <span class="n">mpi_comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span>
                                         <span class="n">mpi_root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
-        <span class="n">cleanup_temporary_files</span> <span class="o">=</span> <span class="bp">True</span>
 
     <span class="c"># Close the output file for the current core. We do this after the consolidation of the ouptut data</span>
     <span class="c"># to avoid that Python might clean up the NamedTemporaryFile when we close it.</span>
     <span class="k">if</span> <span class="n">temp_out_group</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="n">tempfile_name</span> <span class="o">=</span> <span class="n">temp_out_group</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">name</span><span class="p">()</span>
+        <span class="n">tempfile_name</span> <span class="o">=</span> <span class="n">temp_out_group</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span>
         <span class="n">temp_out_group</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">cleanup_temporary_files</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cleanup_temporary_files</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tempfile_name</span><span class="p">):</span>
             <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tempfile_name</span><span class="p">)</span>
 
+    <span class="c"># TODO Save execution settings and statistics</span>
+    <span class="c"># TODO Check why match matrices are not None in score_scan_list_against_trees_serial even for scores that are not calculated</span>
 </div>
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="n">main</span><span class="p">(</span><span class="n">use_command_line</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>

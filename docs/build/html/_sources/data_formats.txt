@@ -48,10 +48,10 @@ output results may be stored in an arbitray user-defined group which will contai
     * ``scans/`` : Optional group with the actual scan data stored using the scan data format described above.
 
 
-Tree file Lookup table data format (score_frag_dag)
+Tree file lookup table data format (score_frag_dag)
 ---------------------------------------------------
 
-This is usually a binary numpu ``.npy` file with a 1D array with the dtype defined in :py:mod:`pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE` defining for each molecular fragmentation tree: i) the path to the HDF5 tree file and ii) the primary mass of the corresponding molecule, which is used to search for trees with a matching precusor mz. The array may also be stored in an HDF5 file in a dataset with a corresponding compound dtype.
+This is usually a binary numpy ``.npy` file with a 1D array with the dtype defined in :py:mod:`pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE` defining for each molecular fragmentation tree: i) the path to the HDF5 tree file and ii) the primary mass of the corresponding molecule, which is used to search for trees with a matching precusor mz. The array may also be stored in an HDF5 file in a dataset with a corresponding compound dtype. The tree lookup file can be generated using the :py:func:`pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass` function. Existing tree-file lookup tables can be loaded from file via :py:func:`pactolus.score_frag_dag.load_file_lookup_table` (which can also generate lookup tables from a textfile with a list of tree files or a directory with tree files).
 
 
 Fragementation tree data format (generate_frag_dag)

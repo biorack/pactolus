@@ -75,7 +75,7 @@
 <li class="toctree-l2"><a class="reference internal" href="data_formats.html#scan-spectrum-data-format-score-frag-dag">Scan/Spectrum data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="data_formats.html#scoring-temporary-output-data-format-score-frag-dag">Scoring temporary output data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="data_formats.html#scoring-main-output-data-format-score-frag-dag">Scoring main output data format (score_frag_dag)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="data_formats.html#tree-file-lookup-table-data-format-score-frag-dag">Tree file Lookup table data format (score_frag_dag)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data_formats.html#tree-file-lookup-table-data-format-score-frag-dag">Tree file lookup table data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="data_formats.html#fragementation-tree-data-format-generate-frag-dag">Fragementation tree data format (generate_frag_dag)</a></li>
 </ul>
 </li>
@@ -185,7 +185,8 @@
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">match_matrix, a bool matrix with n_peaks columns and n_nodes rows.
-elements are True if given peak matches given node of frag_dag</p>
+elements are True if given peak matches given node of frag_dag
+Returned only if want_match_matrix is True, othewise None is returned.</p>
 </td>
 </tr>
 </tbody>
@@ -208,6 +209,35 @@ elements are True if given peak matches given node of frag_dag</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Return lambda:</th><td class="field-body"><p class="first last">np.ndarray of floats containing the lambda scores</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pactolus.score_frag_dag.check_scoring_output_targets">
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">check_scoring_output_targets</code><span class="sig-paren">(</span><em>output_filepath</em>, <em>output_grouppath</em>, <em>tempdir=''</em>, <em>cleanup_output=False</em>, <em>cleanup_tempdir=False</em>, <em>mpi_comm=None</em>, <em>mpi_root=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#check_scoring_output_targets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.check_scoring_output_targets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether the locations we should use for writing are clean.
+Optionally clean the locations by deleting any prior data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>output_filepath</strong> &#8211; The path to the file where scoring results should be written to</li>
+<li><strong>output_grouppath</strong> &#8211; The path to the group where scoring results should be written to</li>
+<li><strong>tempdir</strong> &#8211; The path of the temporary data location. Empty string is used to indicate that the default
+tempdir and NamedTemporaryFiles will be used instead.</li>
+<li><strong>mpi_comm</strong> &#8211; The MPI communicator to be used when runnning in parallel</li>
+<li><strong>mpi_root</strong> &#8211; The root MPI process to be used</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">output_clean boolean indicating whether the output target is clean</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">tempdir_clean boolean indicating whether the temproary directory is clean</p>
 </td>
 </tr>
 </tbody>
@@ -399,7 +429,7 @@ as a whole</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>use_command_line</strong> &#8211; Retrieve analysis settings from the command line</li>
 <li><strong>kwargs</strong> &#8211; <p>Optional keyword arguments used to define all (or overwrite some) settings usually defined
-via the command line. Optional keyqord arguments are:</p>
+via the command line. Optional keywqord arguments are:</p>
 <blockquote>
 <div><ul>
 <li><cite>input</cite> : The full input path provided by the user</li>
@@ -415,12 +445,19 @@ via the command line. Optional keyqord arguments are:</p>
 <li><cite>ms2_mass_tolerance</cite> : The ms2 mass tolerance floating point value</li>
 <li><cite>max_depth</cite> : The maximum search depth in the trees integer value</li>
 <li><cite>neutralizations</cite> : Numpy array with floating point neutralization values</li>
-<li><cite>pass_scan_meta</cite>: Boolean indicating whether we should pass additional metadata</li>
+<li><cite>pass_scanmeta</cite>: Boolean indicating whether we should pass additional metadata through to the ouptut</li>
+<li><cite>pass_scans</cite>: Boolean indicating whether the actual scan/spectra data should be passed through                         to the output.</li>
+<li><cite>pass_compound_meta</cite> : Boolean indicating whether we should compile compound metadata from the                     tree file and pass it through to the output.</li>
 <li><cite>schedule</cite> : The scheduling scheme to be used</li>
+<li><cite>collect</cite> : Boolean defining whether the results should be collected to rank 0 in parallel</li>
 <li><cite>loglevel</cite> : String indicating the logging level to be used</li>
-<li><cite>temppath</cite> : Path basename where temporary data files should be stored. Temporary files are created                        one-per-core to incrementally save the results of an analysis.</li>
+<li><cite>tempdir</cite> : Directory where temporary data files should be stored. Temporary files are created                        one-per-core to incrementally save the results of an analysis.</li>
 </ul>
 </div></blockquote>
+<ul>
+<li><cite>clean_tempdir</cite> : &#8220;Boolean indicating whether we should automatically delete conflicting data in tempdir</li>
+<li><cite>clean_output</cite> : Boolean indicating whether we should automatically delete conflicting data in the                 output target defined by &#8211;save.</li>
+</ul>
 </li>
 </ul>
 </td>
@@ -533,8 +570,9 @@ Designed to be used non-neutralized data.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Dictionary with the parsed command line arguments. See &#8211;help for a list of all command line arguments
-and their names. The basic keys in the dict are:<ul class="simple">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
+<dt>Dictionary with the parsed command line arguments. See &#8211;help for a list of all command line arguments</dt>
+<dd>and their names. The basic keys in the dict are:<ul class="last simple">
 <li><cite>input</cite> : The full input path provided by the user</li>
 <li><cite>input_filepath</cite> : The path to the input file</li>
 <li><cite>input_grouppath</cite> : The path to the group within the input file</li>
@@ -554,7 +592,13 @@ and their names. The basic keys in the dict are:<ul class="simple">
 <li><cite>schedule</cite> : The scheduling scheme to be used</li>
 <li><cite>collect</cite> : Boolean defining whether the results should be collected to rank 0 in parallel</li>
 <li><cite>loglevel</cite> : String indicating the logging level to be used</li>
-<li><cite>temppath</cite> : Path basename where temporary data files should be stored. Temporary files are created                            one-per-core to incrementally save the results of an analysis.</li>
+<li><cite>tempdir</cite> : Directory where temporary data files should be stored. Temporary files are created                            one-per-core to incrementally save the results of an analysis.</li>
+</ul>
+</dd>
+</dl>
+<ul class="simple">
+<li><cite>clean_tempdir</cite> : &#8220;Boolean indicating whether we should automatically delete conflicting data in tempdir</li>
+<li><cite>clean_output</cite> : Boolean indicating whether we should automatically delete conflicting data in the                     output target defined by &#8211;save.</li>
 </ul>
 </td>
 </tr>
@@ -616,7 +660,7 @@ value will be None if want_match_matrix is set to False (Default)</p>
 
 <dl class="function">
 <dt id="pactolus.score_frag_dag.score_scan_list_against_trees">
-<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">score_scan_list_against_trees</code><span class="sig-paren">(</span><em>scan_list</em>, <em>ms1_mz</em>, <em>file_lookup_table</em>, <em>neutralizations</em>, <em>ms1_mass_tol</em>, <em>ms2_mass_tol</em>, <em>max_depth</em>, <em>want_match_matrix=False</em>, <em>temp_out_group=None</em>, <em>collect=False</em>, <em>schedule='DYNAMIC'</em>, <em>mpi_comm=None</em>, <em>mpi_root=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#score_scan_list_against_trees"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.score_scan_list_against_trees" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">score_scan_list_against_trees</code><span class="sig-paren">(</span><em>scan_list</em>, <em>ms1_mz</em>, <em>file_lookup_table</em>, <em>neutralizations</em>, <em>ms1_mass_tol</em>, <em>ms2_mass_tol</em>, <em>max_depth</em>, <em>want_match_matrix=False</em>, <em>temp_out_group=None</em>, <em>schedule='DYNAMIC'</em>, <em>mpi_comm=None</em>, <em>mpi_root=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#score_scan_list_against_trees"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.score_scan_list_against_trees" title="Permalink to this definition">¶</a></dt>
 <dd><p>TODO Add documentation</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -692,7 +736,7 @@ with collect set to True).</p>
 
 <dl class="function">
 <dt id="pactolus.score_frag_dag.score_scan_list_against_trees_serial">
-<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">score_scan_list_against_trees_serial</code><span class="sig-paren">(</span><em>scan_list</em>, <em>ms1_mz</em>, <em>file_lookup_table</em>, <em>neutralizations</em>, <em>ms1_mass_tol</em>, <em>ms2_mass_tol</em>, <em>max_depth</em>, <em>want_match_matrix=False</em>, <em>scan_indexes=False</em>, <em>temp_out_group=None</em>, <em>mpi_root=None</em>, <em>mpi_comm=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#score_scan_list_against_trees_serial"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.score_scan_list_against_trees_serial" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">score_scan_list_against_trees_serial</code><span class="sig-paren">(</span><em>scan_list</em>, <em>ms1_mz</em>, <em>file_lookup_table</em>, <em>neutralizations</em>, <em>ms1_mass_tol</em>, <em>ms2_mass_tol</em>, <em>max_depth</em>, <em>want_match_matrix=False</em>, <em>scan_indexes=None</em>, <em>temp_out_group=None</em>, <em>mpi_root=None</em>, <em>mpi_comm=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#score_scan_list_against_trees_serial"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.score_scan_list_against_trees_serial" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a score cube of MIDAS scores for each</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -714,7 +758,7 @@ are present in the supplied tree</li>
 <li><strong>want_match_matrix</strong> &#8211; bool, if True then tuple of (score, match_matrix) is returned, else return score only.
 Default value is False.</li>
 <li><strong>scan_indexes</strong> &#8211; Optional 1D array or list of integer indices for the scans. Used to identify scans
-for logging. Default value is None.</li>
+for logging. Default value is None in which case range(n_scans) will be used as scan_indexes.</li>
 <li><strong>temp_out_group</strong> &#8211; <p>HDF5 group where the results from this run should temporarily be stored. If given, then
 the results for each scan will be written to a group &#8216;scan_#&#8217; which in turn contains the following
 datasets</p>
@@ -735,8 +779,10 @@ to do logging from all cores.</li>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">match_matrix     Optional output that is only returned if want_match_matrix is set to True.
-List of lists of match matrices (one matrix per scan and compound combination).
-Each entry is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
+Dictionary of  match matrices (one matrix per non-zero score for a given scan and
+compound combination). The keys are tuples of integers describing the index of
+scan and compound in the returned score_matrix.
+Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
 if given peak matches given node of frag_dag. An entry will be None in case that
 the hit-score was 0. The return value will be None if want_match_matrix is set
 to False (Default)</p>

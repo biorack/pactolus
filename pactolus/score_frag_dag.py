@@ -15,10 +15,12 @@ Score spectra/scans against a collection of molecular fragmentation trees.
 # TODO In the new setup we compile the ouput as indipendent arrays (rather than as a HIT_TABLE). Should we remove the HIT_TABLE functionality?
 # TODO Test that everything is working
 # TODO Add description of the HDF5 format used to store fragmentation trees to the documentation
+# TODO Need to test score_peakcube_against_trees(...) after the numerous changes we have made
+# TODO Parallelize score_peakcube_against_trees(...)
 
 # FIXED: max_depth parameter was not passed to the scoring function in neither score_scan_list_against_trees nor score_peak_cube_against_trees
 # FIXED: Updated score_scan_list_against_trees nor score_peak_cube_against_trees functions to replace the params dict with explicit input parameters
-# FIXED: Allow return of match matrix
+# FIXED: Allow return of match matrix when scoring many scans. The data is returned as a sparse dict so that we only store data for non-zero scores.
 # FIXED: Allow metadata to passed through the main function
 # FIXED: The created hittable conained always 0 for the number of peaks and number of matched peaks (because the match matrix was required but not returned and not set as input)
 # FIXED:  calculate_MIDAS_score the calculation of the nodes to be used when max_depth was specified had a bug no.where[...] was an illegal expression
@@ -351,10 +353,13 @@ def score_peakcube_against_trees(peakcube,
 
     :return: score_cube       a numpy ndarray of shape (nx, ..., len(file_lookup_table))
     :return: match_matrix     Optional output that is only returned if want_match_matrix is set to True.
-                              List of lists of match matrices (one matrix per scan). Each entry is a bool matrix
-                              with n_peaks columns and n_nodes rows. Elements are True if given peak matches given
-                              node of frag_dag. An entry will be None in case that the hit-score was 0. The return
-                              value will be None if want_match_matrix is set to False (Default)
+                              Dictionary of  match matrices (one matrix per non-zero score for a given scan and
+                              compound combination). The keys are tuples of integers describing the index of
+                              scan and compound in the returned score_matrix.
+                              Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
+                              if given peak matches given node of frag_dag. An entry will be None in case that
+                              the hit-score was 0. The return value will be None if want_match_matrix is set
+                              to False (Default)
 
 
     Unlike score_scan_list_against_trees, this function is designed to work on numpy arrays of scans.  It is more
@@ -382,7 +387,7 @@ def score_peakcube_against_trees(peakcube,
     score_cube = np.zeros(shape=(n_coordinates, n_compounds), dtype=float)
 
     # Initalize the match matrix
-    match_matrix = None if not want_match_matrix else ([[None] * n_compounds] * n_coordinates)
+    match_matrix_dict = {}
 
     # figure files to score
     file_idxs = []
@@ -413,14 +418,14 @@ def score_peakcube_against_trees(peakcube,
                                                                     max_depth=max_depth,
                                                                     want_match_matrix=want_match_matrix)
             if want_match_matrix:
-                match_matrix[i][idx] = temp_matrix
+                match_matrix_dict[(i,idx)] = temp_matrix
 
     # Compute the shape the score cube should have when we return it
     # Alternatively one could e.g. do tuple(list(spatial_dimensions) + [n_compounds,])
     score_cube_shape = sum((spatial_dimensions, (n_compounds,)), ())
 
     if want_match_matrix:
-        return score_cube.reshape(score_cube_shape), match_matrix.reshape(score_cube_shape)
+        return score_cube.reshape(score_cube_shape), match_matrix_dict
     else:
         return score_cube.reshape(score_cube_shape), None
 
@@ -479,8 +484,10 @@ def score_scan_list_against_trees_serial(scan_list,
 
     :return: score_matrix     a numpy ndarray of shape (n_scans, len(file_lookup_table))
     :return: match_matrix     Optional output that is only returned if want_match_matrix is set to True.
-                              List of lists of match matrices (one matrix per scan and compound combination).
-                              Each entry is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
+                              Dictionary of  match matrices (one matrix per non-zero score for a given scan and
+                              compound combination). The keys are tuples of integers describing the index of
+                              scan and compound in the returned score_matrix.
+                              Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
                               if given peak matches given node of frag_dag. An entry will be None in case that
                               the hit-score was 0. The return value will be None if want_match_matrix is set
                               to False (Default)
@@ -515,7 +522,7 @@ def score_scan_list_against_trees_serial(scan_list,
 
     # initialize output variable score_matrix
     score_matrix = np.zeros(shape=(n_scans, n_compounds), dtype=float)
-    match_matrix = None if not want_match_matrix else ([[None] * n_compounds] * n_scans)
+    match_matrix_dict = {}
 
     # cannot assume common parent for all scans; must loop over scans first
     # if this part is slow it can be improved by grouping/clustering scans by common precursor first
@@ -548,7 +555,7 @@ def score_scan_list_against_trees_serial(scan_list,
                                                                       max_depth=max_depth,
                                                                       want_match_matrix=want_match_matrix)
             if want_match_matrix:
-                match_matrix[i][idx] = temp_matrix
+                match_matrix_dict[(i,idx)] = temp_matrix
 
         number_of_hits = (score_matrix[i, :] > 0).sum()
 
@@ -567,13 +574,19 @@ def score_scan_list_against_trees_serial(scan_list,
             score_data_group['score_matrix'] = score_matrix[i, :]
             if want_match_matrix:
                 for compound_index in range(n_compounds):
-                    if match_matrix[i][compound_index] is not None:
-                        match_matrix_dataset_name = 'match_matrix_%i_%i' % (scan_indexes[i], compound_index)
-                        score_data_group[match_matrix_dataset_name] = match_matrix[i][compound_index]
+                    if (i, compound_index) in match_matrix_dict:
+                        # Create the match matrix dataset
+                        score_data_group.create_dataset(name='match_matrix_%i_%i' % (scan_indexes[i], compound_index),
+                                                        data=match_matrix_dict[(i, compound_index)],
+                                                        chunks=True,
+                                                        fillvalue=False,
+                                                        compression='gzip',
+                                                        compression_opts=4)
+
             temp_out_group.file.flush()
 
     if want_match_matrix:
-        return score_matrix, match_matrix
+        return score_matrix, match_matrix_dict
     else:
         return score_matrix, None
 
@@ -863,8 +876,11 @@ def parse_command_line_args():
              * `schedule` : The scheduling scheme to be used
              * `collect` : Boolean defining whether the results should be collected to rank 0 in parallel
              * `loglevel` : String indicating the logging level to be used
-             * `temppath` : Path basename where temporary data files should be stored. Temporary files are created \
+             * `tempdir` : Directory where temporary data files should be stored. Temporary files are created \
                            one-per-core to incrementally save the results of an analysis.
+            * `clean_tempdir` : "Boolean indicating whether we should automatically delete conflicting data in tempdir
+            * `clean_output` : Boolean indicating whether we should automatically delete conflicting data in the \
+                    output target defined by --save.
 
     """
     dtypes = data_dtypes.get_dtypes()
@@ -1033,8 +1049,8 @@ def parse_command_line_args():
                                          required=False,
                                          choices=log_helper.log_levels.keys(),
                                          dest='loglevel')
-    optional_argument_group.add_argument("--temppath",
-                                         help="Path basename where temporary data files should be stored. " +
+    optional_argument_group.add_argument("--tempdir",
+                                         help="Directory where temporary data files should be stored. " +
                                               "Temporary files are created one-per-core to incrementally " +
                                               "save the results of an analysis. If not given, then a tempfiles" +
                                               "will be created automatically if needed (i.e., if --save is set)." +
@@ -1043,7 +1059,23 @@ def parse_command_line_args():
                                          action="store",
                                          default="",
                                          required=False,
-                                         dest='temppath')
+                                         dest='tempdir')
+    optional_argument_group.add_argument("--clean_tempdir",
+                                         help="Boolean indicating whether we should automatically delete " +
+                                              "conflicting data in the tempdir.",
+                                         action="store",
+                                         type=dtypes["bool"],
+                                         required=False,
+                                         default=False,
+                                         dest="clean_tempdir")
+    optional_argument_group.add_argument("--clean_output",
+                                         help="Boolean indicating whether we should automatically delete " +
+                                              "conflicting data in the output target defined by --save",
+                                         action="store",
+                                         type=dtypes["bool"],
+                                         required=False,
+                                         default=False,
+                                         dest="clean_output")
 
     # Parse the command line arguments
     command_line_args =  vars(parser.parse_args())  # vars(parser.parse_known_args()[0])
@@ -1362,8 +1394,15 @@ def collect_score_scan_list_results(temp_filename_lists,
                 compound_index = int(match_matrix_name.split('_')[-1])
                 match_matrix = scan_group[match_matrix_name][:]
                 num_matched[scan_index, compound_index] = match_matrix.sum()
-                output_group[match_matrix_name] = match_matrix
-                num_matched[scan_index, compound_index] = scan_group[match_matrix_name][:].sum()
+                # Create a compressed dataset for the match matrix
+                match_matrix_dataset = output_group.create_dataset(name=match_matrix_name,
+                                                                   data=match_matrix,
+                                                                   chunks=True,
+                                                                   fillvalue=False,
+                                                                   compression='gzip',
+                                                                   compression_opts=4)
+                # Write only the few elements that are True to avoid initialization of chunks with False only
+                match_matrix_dataset[match_matrix] = True
 
     # Save the number of matched peaks array if anything is available
     if num_matched.sum() > 0:
@@ -1486,6 +1525,74 @@ def compound_metadata_from_trees(table_file,
     # return the compound metadata results
     return compound_metadata
 
+def check_scoring_output_targets(output_filepath,
+                                 output_grouppath,
+                                 tempdir='',
+                                 cleanup_output=False,
+                                 cleanup_tempdir=False,
+                                 mpi_comm=None,
+                                 mpi_root=0):
+    """
+    Check whether the locations we should use for writing are clean.
+    Optionally clean the locations by deleting any prior data.
+
+    :param output_filepath: The path to the file where scoring results should be written to
+    :param output_grouppath: The path to the group where scoring results should be written to
+    :param tempdir: The path of the temporary data location. Empty string is used to indicate that the default
+        tempdir and NamedTemporaryFiles will be used instead.
+    :param mpi_comm: The MPI communicator to be used when runnning in parallel
+    :param mpi_root: The root MPI process to be used
+
+    :return: output_clean boolean indicating whether the output target is clean
+    :return: tempdir_clean boolean indicating whether the temproary directory is clean
+    """
+    output_clean = True
+    tempdir_clean = True
+    if mpi_helper.get_rank(comm=mpi_comm) == mpi_root:
+        if os.path.exists(output_filepath):
+            try:
+                outfile = h5py.File(output_filepath,'r')
+                try:
+                    outfile[output_grouppath]
+                    output_clean = False
+                except KeyError:
+                    output_clean = True
+            except:
+                output_clean = False
+            if not output_clean and cleanup_output:
+                try:
+                    os.remove(output_filepath)
+                    log_helper.debug(__name__, "Removed : " + output_filepath, comm=mpi_comm, root=mpi_root)
+                    output_clean = True
+                except:
+                    log_helper.error(__name__, "An error occured while trying to clean the output/save target",
+                                         comm=mpi_comm, root=mpi_root)
+                    output_clean = False
+        if len(tempdir) > 0:
+            if not os.path.exists(tempdir):
+                tempdir_clean = False
+            elif os.path.isdir(tempdir):
+                for tempobj in os.listdir(tempdir):
+                    if tempobj.endswith('.h5'):
+                        tempdir_clean = False
+                        break
+                if cleanup_tempdir:
+                    try:
+                        for tempobj in os.listdir(tempdir):
+                            if tempobj.endswith('.h5'):
+                                delete_filename = os.path.join(tempdir, tempobj)
+                                os.remove(delete_filename)
+                                log_helper.debug(__name__, "Removed : " + delete_filename, comm=mpi_comm, root=mpi_root)
+                        tempdir_clean = True
+                    except:
+                        log_helper.error(__name__, "An error occured while trying to clean the tempdir",
+                                         comm=mpi_comm, root=mpi_root)
+            else:
+                tempdir_clean = False
+
+    return output_clean, tempdir_clean
+
+
 
 def main(use_command_line=True, **kwargs):
     """
@@ -1493,7 +1600,7 @@ def main(use_command_line=True, **kwargs):
 
     :param use_command_line: Retrieve analysis settings from the command line
     :param kwargs: Optional keyword arguments used to define all (or overwrite some) settings usually defined
-        via the command line. Optional keyqord arguments are:
+        via the command line. Optional keywqord arguments are:
 
          * `input` : The full input path provided by the user
          * `input_filepath` : The path to the input file
@@ -1508,11 +1615,20 @@ def main(use_command_line=True, **kwargs):
          * `ms2_mass_tolerance` : The ms2 mass tolerance floating point value
          * `max_depth` : The maximum search depth in the trees integer value
          * `neutralizations` : Numpy array with floating point neutralization values
-         * `pass_scan_meta`: Boolean indicating whether we should pass additional metadata
+         * `pass_scanmeta`: Boolean indicating whether we should pass additional metadata through to the ouptut
+         * `pass_scans`: Boolean indicating whether the actual scan/spectra data should be passed through \
+                        to the output.
+         * `pass_compound_meta` : Boolean indicating whether we should compile compound metadata from the \
+                    tree file and pass it through to the output.
          * `schedule` : The scheduling scheme to be used
+         * `collect` : Boolean defining whether the results should be collected to rank 0 in parallel
          * `loglevel` : String indicating the logging level to be used
-         * `temppath` : Path basename where temporary data files should be stored. Temporary files are created \
+         * `tempdir` : Directory where temporary data files should be stored. Temporary files are created \
                        one-per-core to incrementally save the results of an analysis.
+        * `clean_tempdir` : "Boolean indicating whether we should automatically delete conflicting data in tempdir
+        * `clean_output` : Boolean indicating whether we should automatically delete conflicting data in the \
+                output target defined by --save.
+
 
     """
     global METACYC_DTYPE
@@ -1548,14 +1664,35 @@ def main(use_command_line=True, **kwargs):
     pass_scanmeta = command_line_args['pass_scanmeta']
     pass_scans = command_line_args['pass_scans']
     loglevel = command_line_args['loglevel']
-    temppath = command_line_args['temppath']
+    tempdir = command_line_args['tempdir']
+    clean_tempdir = command_line_args['clean_tempdir']
+    clean_output = command_line_args['clean_output']
     pass_compound_meta = command_line_args['pass_compound_meta']
+
 
     # Set the log level
     if loglevel in log_helper.log_levels.keys():
         log_helper.set_log_level(level=log_helper.log_levels[loglevel])
     else:
         log_helper.error(module_name=__name__, message="Invalid log level specified")
+
+    # Ensure that the output is clean. This function handles the parallel case
+    output_clean, tempdir_clean = check_scoring_output_targets(output_filepath=output_filepath,
+                                                               output_grouppath=output_grouppath,
+                                                               tempdir=tempdir,
+                                                               cleanup_output=clean_output,
+                                                               cleanup_tempdir=clean_tempdir,
+                                                               mpi_comm=mpi_comm,
+                                                               mpi_root=mpi_root)
+    if not output_clean:
+        log_helper.error(__name__, "The output target is not save for use (e.g. colliding data already exists): "
+                         + output_filepath + ":" + output_grouppath, comm=mpi_comm, root=mpi_root)
+        exit(0)
+    if not tempdir_clean:
+        log_helper.error(__name__, "The tempdir target is not save for use (e.g. colliding data already exists): "
+                         + tempdir, comm=mpi_comm, root=mpi_root)
+        exit(0)
+
 
     # Read the scan data from file
     # TODO: Possibly optimize data load by reading only on the mpi root and then sending the data to all ranks via MPI
@@ -1583,9 +1720,9 @@ def main(use_command_line=True, **kwargs):
 
     # Initalize the temporary output file
     temp_out_group=None
-    if len(temppath) > 0:
-        if os.path.isdir(temppath):
-            temp_out_file = h5py.File(os.path.join(temppath, 'pactolus_rankfile_' + str(mpi_helper.get_rank()) + ".h5"))
+    if len(tempdir) > 0:
+        if os.path.isdir(tempdir):
+            temp_out_file = h5py.File(os.path.join(tempdir, 'pactolus_rankfile_' + str(mpi_helper.get_rank()) + ".h5"))
             temp_out_group = temp_out_file['/']
         cleanup_temporary_files = output_filepath is not None
     elif output_filepath is not None:
