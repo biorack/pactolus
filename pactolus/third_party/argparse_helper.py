@@ -1,6 +1,7 @@
 """
 COPYRIGHT: This module has been extracted from BASTet (Berkeley Analysis and Storage Toolkit).
-           In BASTet the sources are in omsi/workflow/common.py and in part of omsi/datastructures/analysis_data
+           In BASTet the sources are in omsi/workflow/common.py and in part of omsi/datastructures/analysis_data.
+           The sources have been modified to remove dependencies on other parts of BASTet
 
 *** Copyright Notice ***
 
@@ -65,6 +66,8 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #########################################################
 
 import argparse
+import numpy as np
+import ast
 
 class RawDescriptionDefaultHelpArgParseFormatter(argparse.ArgumentDefaultsHelpFormatter,
                                                  argparse.RawDescriptionHelpFormatter):
@@ -127,24 +130,25 @@ class data_dtypes(dict):
 
         :return: The converted ndarray
         """
-        from omsi.dataformat.omsi_file.analysis import omsi_file_analysis
-        from omsi.dataformat.omsi_file.msidata import omsi_file_msidata
-        from omsi.dataformat.omsi_file.common import omsi_file_common
+        # from omsi.dataformat.omsi_file.analysis import omsi_file_analysis
+        # from omsi.dataformat.omsi_file.msidata import omsi_file_msidata
+        # from omsi.dataformat.omsi_file.common import omsi_file_common
         if isinstance(argument, basestring):
             try:
                 return np.asarray(ast.literal_eval(argument))
             except (ValueError, SyntaxError):
-                omsi_out_object = omsi_file_common.get_omsi_object(h5py_object=argument)
-                if omsi_out_object is not None:
-                    return omsi_out_object
-                else:
-                    raise ValueError('String could not be converted to valid ndarray. This may be ' +
-                                     'due to, e.g., a syntax error or the file may not exists')
-        elif isinstance(argument, dependency_dict) or \
-                isinstance(argument, h5py.Dataset) or isinstance(argument, h5py.Group) or \
-                isinstance(argument, omsi_file_analysis) or \
-                isinstance(argument, omsi_file_msidata):
-            return argument
+                # omsi_out_object = omsi_file_common.get_omsi_object(h5py_object=argument)
+                # if omsi_out_object is not None:
+                #     return omsi_out_object
+                # else:
+                #
+                raise ValueError('String could not be converted to valid ndarray. This may be ' +
+                                 'due to, e.g., a syntax error or the file may not exists')
+        # elif isinstance(argument, dependency_dict) or \
+        #        isinstance(argument, h5py.Dataset) or isinstance(argument, h5py.Group) or \
+        #        isinstance(argument, omsi_file_analysis) or \
+        #        isinstance(argument, omsi_file_msidata):
+        #    return argument
         elif argument is None:
             return None
         return np.asarray(argument)
