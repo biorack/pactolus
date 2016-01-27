@@ -364,7 +364,7 @@ def score_peakcube_against_trees(peakcube,
 
 
     Unlike score_scan_list_against_trees, this function is designed to work on numpy arrays of scans.  It is more
-     appropriate for imaging data where:
+    appropriate for imaging data where:
         1. an common MS1 precursor has been fragmented and scanned many times/places, as long as
         2. a global peak finder has been run on all scans, so peak intensities exist for every peak at every pixel
     """
@@ -1750,11 +1750,15 @@ def main(use_command_line=True, **kwargs):
                                                                mpi_root=mpi_root)
     if not output_clean:
         log_helper.error(__name__, "The output target is not save for use (e.g. colliding data already exists): "
-                         + output_filepath + ":" + output_grouppath, comm=mpi_comm, root=mpi_root)
+                         + output_filepath + ":" + output_grouppath + "\n" + "TIP:Please clean up the output target or " +
+                         "set '--clean_output True to attempt to automatically delete colliding files." ,
+                         comm=mpi_comm, root=mpi_root)
         exit(0)
     if not tempdir_clean:
         log_helper.error(__name__, "The tempdir target is not save for use (e.g. colliding data already exists): "
-                         + tempdir, comm=mpi_comm, root=mpi_root)
+                         + tempdir + " \n TIP: Please clean up the tempdir or set '--clean_tempdir True` to attempt to " +
+                         "automatically delte any colliding files.",
+                         comm=mpi_comm, root=mpi_root)
         exit(0)
 
 
@@ -1764,14 +1768,20 @@ def main(use_command_line=True, **kwargs):
 
     scan_list, scan_metadata, experiment_metadata = load_scan_data_hdf5(filepath=input_filepath,
                                                                        grouppath=input_grouppath)
-    ms1_mz = scan_metadata['ms1_mz'] if 'ms1_mz' in scan_metadata else None
 
-    if cl_precursor_mz >= 0:
+    # Determine the ms1_mz, i.e., the precursor m/z
+    ms1_mz = scan_metadata['ms1_mz'] if 'ms1_mz' in scan_metadata else None
+    if cl_precursor_mz >= 0:   # Overwrite the precursor m/z with the user-defined m/z if necessary
         if ms1_mz is not None:
             log_helper.info(__name__,
                             'Precursor m/z values stored in the input file overwritten by command-line arg value.',
-                            mpi_root=mpi_root, mpi_helper=mpi_helper)
-        mz1_mz = cl_precursor_mz
+                            root=mpi_root, comm=mpi_comm)
+        ms1_mz = np.zeros(shape=len(scan_list), dtype='float')
+        ms1_mz[:] = cl_precursor_mz
+
+    if ms1_mz is None:
+        log_helper.error(__name__, "Missing precursor m/z for the spectra/scans.", comm=mpi_comm, root=mpi_root)
+        exit(0)
 
     # Load the file lookup table
     # TODO: Possibly optimize lookup table generaltion by performing only on mpi root sending to other ranks via MPI
