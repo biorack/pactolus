@@ -3,6 +3,8 @@
 Score spectra/scans against a collection of molecular fragmentation trees.
 
 """
+# QUESTION How can we get the `name`, `metacyc_id`, `lins` from the `inchi string needed to compile the metadata from the treefiles without the database?
+
 # TODO Update tree files to include molecule name and other metadata from the original molecular database
 # TODO Update crossref_to_db to allow look-up of information from tree files
 # TODO Update crossref_to_db to have a safe fallback solution when the database file is missing and the metadata is also not available in the trees
@@ -863,9 +865,11 @@ def parse_command_line_args():
              * `ms2_mass_tolerance` : The ms2 mass tolerance floating point value
              * `max_depth` : The maximum search depth in the trees integer value
              * `neutralizations` : Numpy array with floating point neutralization values
-             * `pass_meta`: Boolean indicating whether we should pass additional metadata through to the ouptut
+             * `pass_scanmeta`: Boolean indicating whether we should pass additional metadata through to the ouptut
              * `pass_scans`: Boolean indicating whether the actual scan/spectra data should be passed through \
                             to the output.
+             * `pass_compound_meta` : Boolean indicating whether we should compile compound metadata from the \
+                        tree file and pass it through to the output.
              * `schedule` : The scheduling scheme to be used
              * `collect` : Boolean defining whether the results should be collected to rank 0 in parallel
              * `loglevel` : String indicating the logging level to be used
@@ -890,7 +894,7 @@ def parse_command_line_args():
                     "        An n-D array is sometimes used to store additional location \n" + \
                     "        That additional data will be ignored.\n" + \
                     "  (4) `mz1_mz` or `precursor_mz1` : 1D array with the MS1 precursor m/z value  \n" + \
-                    "      for each scan. Must be #scans long. \n" + \
+                    "      for each scan. Must be #scans long. May also be part of scan_metadata. \n" + \
                     "  (5) `scan_metadata` : Group with additional arrays for per-scan  \n" + \
                     "      metadata that should be passed through. The first  \n" + \
                     "      dimension of the arrays should always have the same  \n" + \
@@ -936,15 +940,6 @@ def parse_command_line_args():
                                          required=False,
                                          default=-1,
                                          dest="precursor_mz")
-    optional_argument_group.add_argument("--metabolite_database",
-                                         help="The database of metabolites from which the trees were generated." +
-                                              "Needed only if compound metadata from the database should be included" +
-                                              "in the output.",
-                                         action="store",
-                                         type=dtypes["str"],
-                                         default="",
-                                         required=False,
-                                         dest="metabolite_database")
     required_argument_group.add_argument("--trees",
                                          help="1) Path to the sub-directory with all relevent .h5 pactolus fragmentation trees. or " +
                                               "2) path to a text-file with a list of names of the tree files, 3) Path to the" +
@@ -1001,13 +996,13 @@ def parse_command_line_args():
                                          required=False,
                                          default=True,
                                          dest="collect")
-    optional_argument_group.add_argument("--pass_meta",
+    optional_argument_group.add_argument("--pass_scanmeta",
                                          help="Pass per-scan metadata through and include it in the final output",
                                          action="store",
                                          type=dtypes["bool"],
                                          required=False,
                                          default=True,
-                                         dest="pass_meta")
+                                         dest="pass_scanmeta")
     optional_argument_group.add_argument("--pass_scans",
                                          help="Pass the scan/spectrum data through and include it in the final output",
                                          action="store",
@@ -1015,6 +1010,23 @@ def parse_command_line_args():
                                          required=False,
                                          default=True,
                                          dest="pass_scans")
+    optional_argument_group.add_argument("--pass_compound_meta",
+                                         help="Compile compound metadata from the tree file and pass it through " +
+                                              "to the output.",
+                                         action="store",
+                                         type=dtypes["bool"],
+                                         required=False,
+                                         default=True,
+                                         dest="pass_compound_meta")
+    optional_argument_group.add_argument("--metabolite_database",
+                                         help="The database of metabolites from which the trees were generated." +
+                                              "Needed only if compound metadata from the database should be included" +
+                                              "in the output.",
+                                         action="store",
+                                         type=dtypes["str"],
+                                         default="",
+                                         required=False,
+                                         dest="metabolite_database")
     optional_argument_group.add_argument("--match_matrix",
                                          help="Track and record the match matrix data. Required if the num_matched " +
                                               "and match_matrix_s_c data should be included in the output.",
@@ -1426,46 +1438,58 @@ def collect_score_scan_list_results(temp_filename_lists,
         scan_group['scan_metadata'] = scan_metadata_group
 
 
+def compound_metadata_from_trees(table_file,
+                                 mpi_comm=None,
+                                 mpi_root=0):
+    """
+    Compile metadata for the trees in the given table_file
 
-    # Compile the matrix describing the number of peaks that were matched
+    :param table_file:  Full path to .npy file containing tree file names and parent masses or the numpy array directly.
+    :param mpi_comm: The MPI communicator to be used
+    :param mpi_root: The MPI root rank to be used for writing
 
+    :return: Dictionary of 1D arrays with metadata information about the compounds. This includes the:
+            inchi, num_atoms, num_bonds, inchi_key, mass
+    """
+    # load .npy file & extract inchi keys from the filename
+    if isinstance(table_file, basestring):
+        file_lookup_table = np.load(table_file)
+    elif isinstance(table_file, np.ndarray):
+        file_lookup_table = table_file
+    else:
+        raise ValueError('Invalid table-file given')
 
-    # Compile the compound metadata if available
-    # HIT_TABLE_DTYPE = np.dtype({'names': ['score', 'id', 'name',  'mass', 'n_peaks', 'n_match'],
-    #                             'formats': ['f4', 'a100', 'a100', 'f4',   'i4',       'i4']})
+    # Initalize the compound metadata return values
+    num_trees = len(file_lookup_table)
+    compound_metadata = {'inchi': np.zeros(num_trees, dtype='a1000'),
+                         'num_atoms': np.zeros(num_trees, dtype='int'),
+                         'num_bonds': np.zeros(num_trees, dtype='int'),
+                         'inchi_key': np.zeros(num_trees, dtype='a100'),
+                         'mass': np.zeros(num_trees, dtype='float'),}
+                        # TODO Need the name
+                        # TODO Need the id (or metacyc_id)
+                        # TODO need the lins (???_
 
-    # def make_pactolus_hit_table(pactolus_results, table_file, original_db, match_matrix=None):
-    # # transform pactolus results into hit table
-    # global HIT_TABLE_DTYPE
-    # db_arr = crossref_to_db(table_file, original_db)
-    #
-    # # return a list of hit_tables when pactolus_results is a score_list
-    # hit_table_list = []
-    # for scan_index, scores in enumerate(pactolus_results):
-    #     num_nonzero = np.count_nonzero(scores)
-    #     hit_table = np.zeros(shape=(num_nonzero), dtype=HIT_TABLE_DTYPE)
-    #     order = scores.argsort()[::-1][:num_nonzero]
-    #     for idx, hit_index in enumerate(order):
-    #         # Determine the number of peaks and number of matched peaks
-    #         npeaks = 0
-    #         nmatched_peaks = 0
-    #         if match_matrix is not None:
-    #             matches = match_matrix[scan_index][hit_index]
-    #             # Since we only look at non-zero scores we should always have a match matrix but just be sure we check
-    #             if matches is not None:
-    #                 npeaks = matches.size
-    #                 nmatched_peaks = matches.sum()
-    #         # Compule the hittable entry
-    #         hit_table[idx] = (scores[hit_index],
-    #                           db_arr['metacyc_id'][hit_index],
-    #                           db_arr['name'][hit_index],
-    #                           db_arr['mass'][hit_index],
-    #                           npeaks,
-    #                           nmatched_peaks,
-    #                           )
-    #     hit_table_list.append(hit_table)
-    # assert len(hit_table_list) == pactolus_results.shape[0]
-    # return hit_table_list
+    # Compile the metadata based on the metadata information stored in the trees
+    for treeindex, treefile in enumerate(file_lookup_table):
+
+        filename = treefile['filename']
+        file_reader = h5py.File(filename)
+        group_key = file_reader.keys()[0]
+        data_key = file_reader[group_key].keys()[0]
+        compound_metadata['inchi_key'][treeindex] = group_key
+        compound_metadata['mass'][treeindex] = file_reader[group_key][data_key][-1]['mass_vec']
+        try:
+            compound_metadata['inchi'][treeindex] = file_reader[group_key].attrs['inchi']
+            compound_metadata['num_atoms'][treeindex] = file_reader[group_key].attrs['num_atoms']
+            compound_metadata['num_bonds'][treeindex] = file_reader[group_key].attrs['num_bonds']
+        except:
+            log_helper.warning(__name__, "Could not determine metadata for tree: " + str(treeindex),
+                               root=mpi_root, comm=mpi_comm)
+        file_reader.close()
+
+    # return the compound metadata results
+    return compound_metadata
 
 
 def main(use_command_line=True, **kwargs):
@@ -1526,10 +1550,11 @@ def main(use_command_line=True, **kwargs):
     output_grouppath = command_line_args['output_grouppath']
     match_matrix = command_line_args['match_matrix']
     cl_precursor_mz = command_line_args['precursor_mz']
-    pass_meta = command_line_args['pass_meta']
+    pass_scanmeta = command_line_args['pass_scanmeta']
     pass_scans = command_line_args['pass_scans']
     loglevel = command_line_args['loglevel']
     temppath = command_line_args['temppath']
+    pass_compound_meta = command_line_args['pass_compound_meta']
 
     # Set the log level
     if loglevel in log_helper.log_levels.keys():
@@ -1591,6 +1616,12 @@ def main(use_command_line=True, **kwargs):
 
     # Compile the compound metadata
     compound_metadata = {}
+    if pass_compound_meta:
+        # Create the compound metadata from the tree files if possible
+        compound_metadata = compound_metadata_from_trees(table_file=file_lookup_table,
+                                                         mpi_comm=None,
+                                                         mpi_root=0)
+    # Update/expand compound metadata based on the metabolite database
     if metabolite_database:
         try:
             compound_db = crossref_to_db(table_file=file_lookup_table,
@@ -1625,8 +1656,8 @@ def main(use_command_line=True, **kwargs):
                                         num_compounds=num_compounds,
                                         scan_list=scan_list,
                                         save_scan_list=pass_scans,
-                                        scan_metadata=scan_metadata if pass_meta else {},
-                                        experiment_metadata=experiment_metadata if pass_meta else {},
+                                        scan_metadata=scan_metadata if pass_scanmeta else {},
+                                        experiment_metadata=experiment_metadata if pass_scanmeta else {},
                                         compound_metadata=compound_metadata,
                                         file_lookup_table=file_lookup_table,
                                         mpi_comm=mpi_comm,
@@ -1644,71 +1675,4 @@ def main(use_command_line=True, **kwargs):
 
 if __name__ == "__main__":
     main(use_command_line=True)
-
-
-# Save the data to file if necessary
-# if output_filepath is not None and mpi_helper.get_rank() == mpi_root:
-#     # Compile the output data for storage to HDF5 and sort the values to match the input order
-#     output_data = {'scan_index': results[0]}
-#     output_data['score'] = results[1][output_data['scan_index']]
-#     output_data['id_data'] = results[2][output_data['scan_index']]
-#     output_data['name'] = results[3][output_data['scan_index']]
-#     output_data['mass'] = results[4][output_data['scan_index']]
-#     output_data['n_peaks'] = results[5][output_data['scan_index']]
-#     output_data['n_match'] = results[6][output_data['scan_index']]
-#     output_data['id_data'] = results[2][output_data['scan_index']]
-#     if not pass_meta:
-#         scan_metadata = {}
-#         experiment_metadata = {}
-#
-#     # Write the data to HDF5
-#     write_results_hdf5(filepath=output_filepath,
-#                        groupath=output_grouppath,
-#                        output_data=output_data,
-#                        scan_metadata=scan_metadata,
-#                        experiment_metadata=experiment_metadata)
-
-# def write_results_hdf5(filepath,
-#                        groupath,
-#                        output_data,
-#                        scan_meta=None,
-#                        experiment_meta=None):
-#     """
-#     Write the results to file
-#
-#     :param filepath: The path to the HDF5 file ot be used
-#     :param groupath: The path to the group to be used
-#     :param output_data: Dictionary of the output data. Keys are dataset names and values are numpy data arrays.
-#     :param scan_meta: Dictionary of scan metadata. Keys are dataset names and values are numpy data arrays.
-#     :param experiment_meta: Dictionary of the experiment metadata. Keys are dataset names and values are
-#            numpy data arrays.
-#
-#     """
-#     # Open the file
-#     infile = h5py.File(filepath, 'a')
-#     # Get the target group or create the required group(s) if necessary
-#     try:
-#         target = infile[groupath]
-#     except KeyError:
-#         current_group = infile['/']   # Split the path into the hiearchy of subgroups to be used.
-#         # Creat all subgroups
-#         for subgroup in groupath.split('/'):
-#             current_group = current_group.require_group(subgroup)
-#         target = current_group
-#     # Write all data arrays, one after the other
-#     for key, value in output_data.iteritems():
-#         target[key] = value
-#         infile.flush()
-#     if scan_meta is not None:
-#         scan_group = target.require_group('scan_metadata')
-#         for key, value in scan_meta.iteritems():
-#             scan_group[key] = value
-#             infile.flush()
-#     if experiment_meta is not None:
-#         experiment_group = target.require_group('experiment_metadata')
-#         for key, value in experiment_meta.iteritems():
-#             experiment_group[key] = value
-#             infile.flush()
-#
-#     infile.close()
 

@@ -44,7 +44,7 @@ output results may be stored in an arbitray user-defined group which will contai
     * ``num_matched`` Optional dataset describing the number of peaks matched as part of a given score. If available this is a 2D integer matrix of the same shape as ``score_matrix``. Only available if the match matrix data is tracked.
     * ``scan_metadata/`` : Group with additional, optional per-spectrum metadata arrays. This group may contain arbitrary user-defined per-spectrum metadata. Here we usually assume that we have arrays where the first dimension matches the length and ordering of the scans that were scored. Usually we here add the array ``num_peaks`` indicating the number of peaks for each spectrum to help with the evaluation of the score even if the original scan data may not be easily accesible.
     * ``experiment_metadata/`` : Group with additional, optional general metadata about the experiment. This group may contain arbitrary user metadata about the experiment.
-    * ``compound_metadata/`` : Group with additional metadata about the compounds. This typically includes the fields defined by the py:mod:`pactolus.score_frag_dag.METACYC_DTYPE`` ,e.g., the ``id``, ``name``, ``inchi``, ``lins``, ``inchi_key``, ``mass``.
+    * ``compound_metadata/`` : Group with additional optional metadata about the compounds. This may include fields like: ``num_atoms``, ``num_bonds``, ``id``, ``name``, ``inchi``, ``lins``, ``inchi_key``, ``mass``, depending on whether the data is constructed from the metadata database and/or the tree files
     * ``scans/`` : Optional group with the actual scan data stored using the scan data format described above.
 
 
@@ -60,7 +60,7 @@ Fragementation tree data format (generate_frag_dag)
 Fragmentation trees are stored in HDF5 in a group where the group name is the inchi_key. Each tree-group
 contains the following datasets:
 
-    * ``FragTree_at_max_depth=#`` is the fragmentation tree dataset. The fragmentation tree is stored as a  1D compound dataset listing all fragments sorted by their mass. The dataset contains the fragments for the molecule up to the indicated fragmentation depth, i.e., we break at most ``max_depth`` bonds to generate a fragment. Each fragment in the tree is unique in that it appears only once in the fragmentation tree and we store only the shortest bond breakage path that leads to the generation of the fragment. For each fragment, the compound data type stores the following information:
+    * ``FragTree_at_max_depth=#`` is the fragmentation tree dataset. The fragmentation tree is stored as a  1D compound dataset listing all fragments sorted by their mass. The dataset contains the fragments for the molecule up to the indicated fragmentation depth, i.e., we break at most ``max_depth`` bonds to generate a fragment. Each fragment in the tree is unique in that it appears only once in the fragmentation tree and we store only the shortest bond breakage path that leads to the generation of the fragment. The compound data type stores the following information:
 
         * ``atom_bool_arr`` is a bool vector consisting of ``#atoms`` values describing which atoms of the fragmented molecule are part of the fragment.
         * ``bond_bool_arr`` is a bool vector consisting of ``#bonds`` values describing the shortest bond breakage path giving rise to the fragment, i.e., which fragments do we need to break to create the fragment.
@@ -76,3 +76,4 @@ contains the following datasets:
         * ``max_depth`` : The maximum fragmentation depth
         * ``time_to_build`` : The time in seconds used to build the tree.
 
+While technically one could store an arbitrary number of trees in an HDF5 file, ``score_frag_dag`` currently assumes that a single tree be stored in each HDF5 file.
