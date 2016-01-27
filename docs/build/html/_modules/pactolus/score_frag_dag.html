@@ -125,6 +125,9 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="c"># QUESTION How can we get the `name`, `metacyc_id`, `lins` from the `inchi string needed to compile the metadata from the treefiles without the database?</span>
+<span class="c"># QUESTION Do we really need score_peakcube_against_trees(...)</span>
+<span class="c"># QUESTION Do we really need make_pactolus_hittable now that we have collect_score_scan_list_results</span>
+<span class="c"># QUESTION</span>
 
 <span class="c"># TODO Update tree files to include molecule name and other metadata from the original molecular database</span>
 <span class="c"># TODO Update crossref_to_db to allow look-up of information from tree files</span>
@@ -1784,7 +1787,7 @@
 
 
 </div>
-<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">use_command_line</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="score_main"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.score_main">[docs]</a><span class="k">def</span> <span class="nf">score_main</span><span class="p">(</span><span class="n">use_command_line</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Main function used to execute the scoring of scans</span>
 
@@ -2001,7 +2004,7 @@
 
 </div>
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
-    <span class="n">main</span><span class="p">(</span><span class="n">use_command_line</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">score_main</span><span class="p">(</span><span class="n">use_command_line</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 
           </div>

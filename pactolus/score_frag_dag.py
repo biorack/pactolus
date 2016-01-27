@@ -4,6 +4,9 @@ Score spectra/scans against a collection of molecular fragmentation trees.
 
 """
 # QUESTION How can we get the `name`, `metacyc_id`, `lins` from the `inchi string needed to compile the metadata from the treefiles without the database?
+# QUESTION Do we really need score_peakcube_against_trees(...)
+# QUESTION Do we really need make_pactolus_hittable now that we have collect_score_scan_list_results
+# QUESTION
 
 # TODO Update tree files to include molecule name and other metadata from the original molecular database
 # TODO Update crossref_to_db to allow look-up of information from tree files
@@ -1663,7 +1666,7 @@ def check_scoring_output_targets(output_filepath,
 
 
 
-def main(use_command_line=True, **kwargs):
+def score_main(use_command_line=True, **kwargs):
     """
     Main function used to execute the scoring of scans
 
@@ -1880,5 +1883,5 @@ def main(use_command_line=True, **kwargs):
 
 
 if __name__ == "__main__":
-    main(use_command_line=True)
+    score_main(use_command_line=True)
 

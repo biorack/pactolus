@@ -187,7 +187,7 @@ Detailed infomation about the command line options is available via the ``--help
 Scoring many spectra against many trees
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:py:func:`pactolus.score_frag_dag.main` provides a detailed overview of the main steps. Here a rough overview of what we need to do:
+:py:func:`pactolus.score_frag_dag.score_main` provides a detailed overview of the main steps steps. We can also use :py:func:`pactolus.score_frag_dag.score_main` from python directly in much the same way as the command line, simply by providing the approvriate settings as corresponding keyword arguments. Here a rough overview of the main steps when scoring many spectra against tress.
 
     1) **Define the list of fragmentation trees**: Use :py:func:`pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass` or :py:func:`pactolus.score_frag_dag.load_file_lookup_table` to creates a sorted table containing the **i)** .h5 file paths and **ii)** parent MS1 mass for input trees from :py:mod:`pactolus.score_frag_dag`. We may save the list as a ``.npy`` numpy file for later reuse.
     2) **Define the list of scans/spectra** Here we typically load the spectrum data from file via py:func:`pactolus.score_frag_dag.load_scan_data_hdf5`. Alternatively we can also define our own ``scan_list``, which is a list of numpy ndarrays where each array has a shape of ``(num_peaks, 2)`` and the first column ([:,0]) are the m/z values and the second columd ([:,1]) are the intensity values.
