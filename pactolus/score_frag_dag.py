@@ -17,6 +17,7 @@ Score spectra/scans against a collection of molecular fragmentation trees.
 # TODO Add description of the HDF5 format used to store fragmentation trees to the documentation
 # TODO Need to test score_peakcube_against_trees(...) after the numerous changes we have made
 # TODO Parallelize score_peakcube_against_trees(...)
+# TODO Add feature to restart a scoring run based on the temporary data that has been stored.
 
 # FIXED: max_depth parameter was not passed to the scoring function in neither score_scan_list_against_trees nor score_peak_cube_against_trees
 # FIXED: Updated score_scan_list_against_trees nor score_peak_cube_against_trees functions to replace the params dict with explicit input parameters
@@ -528,6 +529,7 @@ def score_scan_list_against_trees_serial(scan_list,
     # if this part is slow it can be improved by grouping/clustering scans by common precursor first
     for i, scan in enumerate(scan_list):
 
+        start_time = time.time()
         # check size of mz_intensity_arr
         if scan.shape[1] != 2:
             raise TypeError('Scans must be numpy arrays with a row for each peak, and *only* two columns')
@@ -541,7 +543,6 @@ def score_scan_list_against_trees_serial(scan_list,
             file_idxs = np.append(file_idxs, new_indices)
 
         # score selected files against every scan in data
-        start_time = time.time()
         for idx in file_idxs:
             filename = file_lookup_table[idx]['filename']
             file_reader = h5py.File(filename)
@@ -582,8 +583,11 @@ def score_scan_list_against_trees_serial(scan_list,
                                                         fillvalue=False,
                                                         compression='gzip',
                                                         compression_opts=4)
-
+            score_data_group.attrs['time_to_score'] = execution_time
+            end_time = time.time()
+            score_data_group.attrs['time_to_score_with_temp_io'] = end_time - start_time
             temp_out_group.file.flush()
+
 
     if want_match_matrix:
         return score_matrix, match_matrix_dict
@@ -1377,15 +1381,19 @@ def collect_score_scan_list_results(temp_filename_lists,
                                                 compression='gzip',
                                                 compression_opts=2)
     num_matched = np.zeros(shape=(num_scans, num_compounds), dtype='int')
+    time_to_score = np.zeros(shape=num_scans, dtype='float')
+    time_to_score_with_temp_io = np.zeros(shape=num_scans, dtype='float')
 
     # Open the temporary output files one-by-one and add the data to the output file
     for temp_output_filename in temp_filename_lists:
         temp_output_file=h5py.File(temp_output_filename, 'r')
-        scan_group_names= [g for g in temp_output_file.keys() if g.startswith('scan_') ]
+        scan_group_names = [g for g in temp_output_file.keys() if g.startswith('scan_') ]
         # Iterate over all scan scoring results in the temporary output file
         for scan_group_name in scan_group_names:
             scan_group = temp_output_file[scan_group_name]
             scan_index = int(scan_group_name.split('_')[-1])
+            time_to_score[scan_index] = scan_group.attrs['time_to_score'][()]
+            time_to_score_with_temp_io[scan_index] = scan_group.attrs['time_to_score_with_temp_io'][()]
             match_matrix_dataset_names = [d for d in scan_group.keys() if d.startswith('match_matrix_')]
             # Copy the scores for the scan into the main output file
             score_dataset[scan_index, :] = scan_group['score_matrix'][:]
@@ -1444,6 +1452,10 @@ def collect_score_scan_list_results(temp_filename_lists,
         for key, value in scan_metadata.iteritems():
             scan_metadata_group [key] = value
             output_file.flush()
+
+    # Add the scoring timing data
+    scan_metadata_group['time_to_score'] = time_to_score
+    scan_metadata_group['time_to_score_with_temp_io'] = time_to_score_with_temp_io
 
     # Compile and add the n_peaks data
     num_peaks = np.asarray([scan.shape[0] for scan in scan_list])

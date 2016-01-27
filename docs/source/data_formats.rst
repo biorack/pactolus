@@ -26,6 +26,10 @@ to temporary files. The resulting output files have the following structure:
 
          * ``score_matrix`` : The 2D score matrix with all scores. This matrix has a shape (n_scans, len(file_lookup_table)).
          * ``match_matrix_#s_#c`` where #s is the spectrum index and #c is the compound index. Each of these datasets contains the match matrix for the corresponding spectrum / compound combination. A match matrix is a 2D bool array with a shape of ``(n_peaks, n_nodes)`` where ``n_peaks` is the number of peaks in the spectrum and ``n_nodes`` is the number of nodes in the tree.
+         * Additionally the following attributes are stored on the group:
+
+            * ``time_to_score`` The time in seconds used to compute the scores (without temporary I/O)
+            * ``time_to_score_with_temp_io`` The time in seconds used to compute the scores including the time used for I/O to per-core temporary files
 
 When running in parallel, one temporary output file will be generated per MPI rank (i.e, compute core).
 
@@ -42,7 +46,7 @@ output results may be stored in an arbitray user-defined group which will contai
     * ``match_matrix_#s_#c`` where #s is the spectrum index and #c is the compound index. Each of these datasets contains the match matrix for the corresponding spectrum / compound combination. A match matrix is a 2D bool array with a shape of ``(n_peaks, n_nodes)`` where ``n_peaks`` is the number of peaks in the spectrum and ``n_nodes`` is the number of nodes in the tree. The match matrix datasets are optional.
     * ``tree_file_lookup_table`` : 1D compound dataset with the lookup table used to define the tree-files used for scoring. The dtype is defined in :py:mod:`pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE` .
     * ``num_matched`` Optional dataset describing the number of peaks matched as part of a given score. If available this is a 2D integer matrix of the same shape as ``score_matrix``. Only available if the match matrix data is tracked.
-    * ``scan_metadata/`` : Group with additional, optional per-spectrum metadata arrays. This group may contain arbitrary user-defined per-spectrum metadata. Here we usually assume that we have arrays where the first dimension matches the length and ordering of the scans that were scored. Usually we here add the array ``num_peaks`` indicating the number of peaks for each spectrum to help with the evaluation of the score even if the original scan data may not be easily accesible.
+    * ``scan_metadata/`` : Group with additional, optional per-spectrum metadata arrays. This group may contain arbitrary user-defined per-spectrum metadata. Here we usually assume that we have arrays where the first dimension matches the length and ordering of the scans that were scored. Usually we here add the array ``num_peaks`` indicating the number of peaks for each spectrum to help with the evaluation of the score even if the original scan data may not be easily accessible. This generally also includes the ``time_to_score`` and ``time_to_score_with_temp_io`` arrays describing the time in seconds for computing the score with and without I/O to temporary files, respectively.
     * ``experiment_metadata/`` : Group with additional, optional general metadata about the experiment. This group may contain arbitrary user metadata about the experiment.
     * ``compound_metadata/`` : Group with additional optional metadata about the compounds. This may include fields like: ``num_atoms``, ``num_bonds``, ``id``, ``name``, ``inchi``, ``lins``, ``inchi_key``, ``mass``, depending on whether the data is constructed from the metadata database and/or the tree files
     * ``scans/`` : Optional group with the actual scan data stored using the scan data format described above.

@@ -138,6 +138,7 @@
 <span class="c"># TODO Add description of the HDF5 format used to store fragmentation trees to the documentation</span>
 <span class="c"># TODO Need to test score_peakcube_against_trees(...) after the numerous changes we have made</span>
 <span class="c"># TODO Parallelize score_peakcube_against_trees(...)</span>
+<span class="c"># TODO Add feature to restart a scoring run based on the temporary data that has been stored.</span>
 
 <span class="c"># FIXED: max_depth parameter was not passed to the scoring function in neither score_scan_list_against_trees nor score_peak_cube_against_trees</span>
 <span class="c"># FIXED: Updated score_scan_list_against_trees nor score_peak_cube_against_trees functions to replace the params dict with explicit input parameters</span>
@@ -649,6 +650,7 @@
     <span class="c"># if this part is slow it can be improved by grouping/clustering scans by common precursor first</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">scan</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">scan_list</span><span class="p">):</span>
 
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="c"># check size of mz_intensity_arr</span>
         <span class="k">if</span> <span class="n">scan</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Scans must be numpy arrays with a row for each peak, and *only* two columns&#39;</span><span class="p">)</span>
@@ -662,7 +664,6 @@
             <span class="n">file_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file_idxs</span><span class="p">,</span> <span class="n">new_indices</span><span class="p">)</span>
 
         <span class="c"># score selected files against every scan in data</span>
-        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">file_idxs</span><span class="p">:</span>
             <span class="n">filename</span> <span class="o">=</span> <span class="n">file_lookup_table</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;filename&#39;</span><span class="p">]</span>
             <span class="n">file_reader</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
@@ -703,8 +704,11 @@
                                                         <span class="n">fillvalue</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                                                         <span class="n">compression</span><span class="o">=</span><span class="s">&#39;gzip&#39;</span><span class="p">,</span>
                                                         <span class="n">compression_opts</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-
+            <span class="n">score_data_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;time_to_score&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">execution_time</span>
+            <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="n">score_data_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;time_to_score_with_temp_io&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span>
             <span class="n">temp_out_group</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
 
     <span class="k">if</span> <span class="n">want_match_matrix</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">score_matrix</span><span class="p">,</span> <span class="n">match_matrix_dict</span>
@@ -1498,15 +1502,19 @@
                                                 <span class="n">compression</span><span class="o">=</span><span class="s">&#39;gzip&#39;</span><span class="p">,</span>
                                                 <span class="n">compression_opts</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
     <span class="n">num_matched</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">num_scans</span><span class="p">,</span> <span class="n">num_compounds</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">time_to_score</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">num_scans</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;float&#39;</span><span class="p">)</span>
+    <span class="n">time_to_score_with_temp_io</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">num_scans</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;float&#39;</span><span class="p">)</span>
 
     <span class="c"># Open the temporary output files one-by-one and add the data to the output file</span>
     <span class="k">for</span> <span class="n">temp_output_filename</span> <span class="ow">in</span> <span class="n">temp_filename_lists</span><span class="p">:</span>
         <span class="n">temp_output_file</span><span class="o">=</span><span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">temp_output_filename</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
-        <span class="n">scan_group_names</span><span class="o">=</span> <span class="p">[</span><span class="n">g</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">temp_output_file</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">g</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;scan_&#39;</span><span class="p">)</span> <span class="p">]</span>
+        <span class="n">scan_group_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">g</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">temp_output_file</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">g</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;scan_&#39;</span><span class="p">)</span> <span class="p">]</span>
         <span class="c"># Iterate over all scan scoring results in the temporary output file</span>
         <span class="k">for</span> <span class="n">scan_group_name</span> <span class="ow">in</span> <span class="n">scan_group_names</span><span class="p">:</span>
             <span class="n">scan_group</span> <span class="o">=</span> <span class="n">temp_output_file</span><span class="p">[</span><span class="n">scan_group_name</span><span class="p">]</span>
             <span class="n">scan_index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">scan_group_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">time_to_score</span><span class="p">[</span><span class="n">scan_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">scan_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;time_to_score&#39;</span><span class="p">][()]</span>
+            <span class="n">time_to_score_with_temp_io</span><span class="p">[</span><span class="n">scan_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">scan_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;time_to_score_with_temp_io&#39;</span><span class="p">][()]</span>
             <span class="n">match_matrix_dataset_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">scan_group</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;match_matrix_&#39;</span><span class="p">)]</span>
             <span class="c"># Copy the scores for the scan into the main output file</span>
             <span class="n">score_dataset</span><span class="p">[</span><span class="n">scan_index</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">scan_group</span><span class="p">[</span><span class="s">&#39;score_matrix&#39;</span><span class="p">][:]</span>
@@ -1565,6 +1573,10 @@
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">scan_metadata</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
             <span class="n">scan_metadata_group</span> <span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
             <span class="n">output_file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+    <span class="c"># Add the scoring timing data</span>
+    <span class="n">scan_metadata_group</span><span class="p">[</span><span class="s">&#39;time_to_score&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_to_score</span>
+    <span class="n">scan_metadata_group</span><span class="p">[</span><span class="s">&#39;time_to_score_with_temp_io&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_to_score_with_temp_io</span>
 
     <span class="c"># Compile and add the n_peaks data</span>
     <span class="n">num_peaks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">scan</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">scan</span> <span class="ow">in</span> <span class="n">scan_list</span><span class="p">])</span>
