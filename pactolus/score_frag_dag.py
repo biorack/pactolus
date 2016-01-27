@@ -359,9 +359,8 @@ def score_peakcube_against_trees(peakcube,
                               compound combination). The keys are tuples of integers describing the index of
                               scan and compound in the returned score_matrix.
                               Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
-                              if given peak matches given node of frag_dag. An entry will be None in case that
-                              the hit-score was 0. The return value will be None if want_match_matrix is set
-                              to False (Default)
+                              if given peak matches given node of frag_dag. The return value will be None if
+                              want_match_matrix is set to False (Default)
 
 
     Unlike score_scan_list_against_trees, this function is designed to work on numpy arrays of scans.  It is more
@@ -490,9 +489,8 @@ def score_scan_list_against_trees_serial(scan_list,
                               compound combination). The keys are tuples of integers describing the index of
                               scan and compound in the returned score_matrix.
                               Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
-                              if given peak matches given node of frag_dag. An entry will be None in case that
-                              the hit-score was 0. The return value will be None if want_match_matrix is set
-                              to False (Default)
+                              if given peak matches given node of frag_dag. The return value will be None if
+                              want_match_matrix is set to False (Default)
 
     Unlike score_peakcube_against_trees, this function is designed to work on _lists_ of scans.  It is more
      appropriate for scans directly extracted from mzML files or for centroided data.  This function does NOT
@@ -605,11 +603,12 @@ def make_pactolus_hit_table(pactolus_results, table_file, original_db, match_mat
                                             was used to generate pactolus results.  Or the numpy array directly.
     :param original_db:     string,     full path to flat text file containing the molecule DB used to generate the
                         fragmentation trees. The primary use for this is to enable lookup of molecule names.
-    :param match_matrix:     Optional input. List of lists of match matrices (one matrix per scan and hit).
-                              Each entry is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
-                              if given peak matches given node of frag_dag. An entry will be None in case that
-                              the hit-score was 0. This is required to fill the number of peaks and matched peaks
-                              entries in the able. If not available then the values will be set to 0.
+    :param match_matrix:     Optional input.  Dictionary of  match matrices (one matrix per non-zero score for a given scan and
+                              compound combination). The keys are tuples of integers describing the index of
+                              scan and compound in the returned score_matrix.
+                              Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
+                              if given peak matches given node of frag_dag. The return value will be None
+                              if want_match_matrix is set to False (Default)
 
     :return: hit_table_list, a list of hit_tables
     """
