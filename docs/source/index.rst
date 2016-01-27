@@ -16,6 +16,7 @@ Welcome to Pactolus's documentation!
    :maxdepth: 5
 
    overview
+   data_formats
    pactolus
 
 
