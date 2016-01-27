@@ -6,7 +6,6 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Index &mdash; Pactolus 0.1 documentation</title>
@@ -16,6 +15,7 @@
   
 
   
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
 
   
   
@@ -34,7 +34,7 @@
     <link rel="top" title="Pactolus 0.1 documentation" href="index.html"/> 
 
   
-  <script src="_static/js/modernizr.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
 
 </head>
 
@@ -44,27 +44,11 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
-          
-
-          
-            <a href="index.html" class="icon icon-home"> Pactolus
-          
-
-          
-          </a>
-
-          
-            
-            
-              <div class="version">
-                0.1
-              </div>
-            
-          
-
-          
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> Pactolus</a>
+        
+        
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -72,23 +56,38 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
+      </div>
 
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
           
-        </div>
-
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
-            
-            
-                <ul>
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a></li>
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#generating-fragmentation-trees">Generating fragmentation trees</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#scoring-spectra-against-trees">Scoring spectra against trees</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#scoring-spectra-against-spectra">Scoring spectra against spectra</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#data-formats">Data Formats:</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#score-frag-dag-scan-spectrum-data-format">score_frag_dag: Scan/Spectrum data format:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#score-frag-dag-temporary-output-data-format">score_frag_dag: Temporary output data format:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#score-frag-dag-main-output-data-format">score_frag_dag: Main output data format:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#score-frag-dag-file-lookup-table-data-format">score_frag_dag: File Lookup table data format:</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="generate_frag_dag.html">generate_frag_dag module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="score_frag_dag.html">score_frag_dag module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spectra_distance.html">spectra_distance module</a></li>
+</ul>
+</li>
 </ul>
 
-            
           
-        </div>
+        
       </div>
+      &nbsp;
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -103,27 +102,18 @@
       
       <div class="wy-nav-content">
         <div class="rst-content">
-          
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
+          <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
     <li></li>
       <li class="wy-breadcrumbs-aside">
         
-          
-        
       </li>
   </ul>
   <hr/>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
+          <div role="main" class="document">
             
 
 <h1 id="index">Index</h1>
@@ -135,6 +125,7 @@
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
+ | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
  | <a href="#P"><strong>P</strong></a>
@@ -182,10 +173,14 @@
   <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.calculate_MIDAS_score">calculate_MIDAS_score() (in module pactolus.score_frag_dag)</a>
   </dt>
 
+      
+  <dt><a href="generate_frag_dag.html#pactolus.generate_frag_dag.FragTree.calculate_monoisotopic_mass">calculate_monoisotopic_mass() (pactolus.generate_frag_dag.FragTree method)</a>
+  </dt>
+
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="generate_frag_dag.html#pactolus.generate_frag_dag.FragTree.calculate_monoisotopic_mass">calculate_monoisotopic_mass() (pactolus.generate_frag_dag.FragTree method)</a>
+  <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.collect_score_scan_list_results">collect_score_scan_list_results() (in module pactolus.score_frag_dag)</a>
   </dt>
 
       
@@ -207,15 +202,19 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.find_matching_fragments">find_matching_fragments() (in module pactolus.score_frag_dag)</a>
+  <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE">FILE_LOOKUP_TABLE_DTYPE (in module pactolus.score_frag_dag)</a>
   </dt>
 
       
-  <dt><a href="generate_frag_dag.html#pactolus.generate_frag_dag.FragTree">FragTree (class in pactolus.generate_frag_dag)</a>
+  <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.find_matching_fragments">find_matching_fragments() (in module pactolus.score_frag_dag)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="generate_frag_dag.html#pactolus.generate_frag_dag.FragTree">FragTree (class in pactolus.generate_frag_dag)</a>
+  </dt>
+
       
   <dt><a href="generate_frag_dag.html#pactolus.generate_frag_dag.FragTreeLibrary">FragTreeLibrary (class in pactolus.generate_frag_dag)</a>
   </dt>
@@ -228,10 +227,6 @@
   <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="generate_frag_dag.html#pactolus.generate_frag_dag.get_isotope_dict">get_isotope_dict() (in module pactolus.generate_frag_dag)</a>
-  </dt>
-
-      
-  <dt><a href="generate_frag_dag.html#pactolus.generate_frag_dag.mpi_helper.get_rank">get_rank() (pactolus.generate_frag_dag.mpi_helper static method)</a>
   </dt>
 
   </dl></td>
@@ -253,6 +248,22 @@
   </dl></td>
 </tr></table>
 
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.load_file_lookup_table">load_file_lookup_table() (in module pactolus.score_frag_dag)</a>
+  </dt>
+
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.load_scan_data_hdf5">load_scan_data_hdf5() (in module pactolus.score_frag_dag)</a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
@@ -260,6 +271,12 @@
   <dt><a href="generate_frag_dag.html#pactolus.generate_frag_dag.main">main() (in module pactolus.generate_frag_dag)</a>
   </dt>
 
+      <dd><dl>
+        
+  <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.main">(in module pactolus.score_frag_dag)</a>
+  </dt>
+
+      </dl></dd>
       
   <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass">make_file_lookup_table_by_MS1_mass() (in module pactolus.score_frag_dag)</a>
   </dt>
@@ -268,22 +285,14 @@
   <dt><a href="generate_frag_dag.html#pactolus.generate_frag_dag.FragTree.make_fragment_dict">make_fragment_dict() (pactolus.generate_frag_dag.FragTree method)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.make_pactolus_hit_table">make_pactolus_hit_table() (in module pactolus.score_frag_dag)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.METACYC_DTYPE">METACYC_DTYPE (in module pactolus.score_frag_dag)</a>
-  </dt>
-
-      
-  <dt><a href="generate_frag_dag.html#pactolus.generate_frag_dag.mpi_helper.MPI_AVAILABLE">MPI_AVAILABLE (pactolus.generate_frag_dag.mpi_helper attribute)</a>
-  </dt>
-
-      
-  <dt><a href="generate_frag_dag.html#pactolus.generate_frag_dag.mpi_helper">mpi_helper (class in pactolus.generate_frag_dag)</a>
   </dt>
 
   </dl></td>
@@ -331,6 +340,10 @@
   </dt>
 
       
+  <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.parse_command_line_args">parse_command_line_args() (in module pactolus.score_frag_dag)</a>
+  </dt>
+
+      
   <dt><a href="generate_frag_dag.html#pactolus.generate_frag_dag.print_arguments">print_arguments() (in module pactolus.generate_frag_dag)</a>
   </dt>
 
@@ -365,11 +378,19 @@
   </dt>
 
       
-  <dt><a href="spectra_distance.html#pactolus.spectra_distance.score_spectra_pairwise">score_spectra_pairwise() (in module pactolus.spectra_distance)</a>
+  <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.score_scan_list_against_trees_parallel">score_scan_list_against_trees_parallel() (in module pactolus.score_frag_dag)</a>
+  </dt>
+
+      
+  <dt><a href="score_frag_dag.html#pactolus.score_frag_dag.score_scan_list_against_trees_serial">score_scan_list_against_trees_serial() (in module pactolus.score_frag_dag)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="spectra_distance.html#pactolus.spectra_distance.score_spectra_pairwise">score_spectra_pairwise() (in module pactolus.spectra_distance)</a>
+  </dt>
+
       
   <dt><a href="generate_frag_dag.html#pactolus.generate_frag_dag.FragTree.set_isotopes">set_isotopes() (pactolus.generate_frag_dag.FragTree method)</a>
   </dt>
@@ -393,7 +414,6 @@
 
 
 
-           </div>
           </div>
           <footer>
   
@@ -403,13 +423,12 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2015, Curt R. Fischer, Oliver Ruebel, and Benjamin P. Bowen.
-
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
 </footer>
-
         </div>
       </div>
 

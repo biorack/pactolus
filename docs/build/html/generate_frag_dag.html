@@ -5,7 +5,6 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>generate_frag_dag module &mdash; Pactolus 0.1 documentation</title>
@@ -15,6 +14,7 @@
   
 
   
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
 
   
   
@@ -36,7 +36,7 @@
         <link rel="prev" title="pactolus Package" href="pactolus.html"/> 
 
   
-  <script src="_static/js/modernizr.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
 
 </head>
 
@@ -46,27 +46,11 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
-          
-
-          
-            <a href="index.html" class="icon icon-home"> Pactolus
-          
-
-          
-          </a>
-
-          
-            
-            
-              <div class="version">
-                0.1
-              </div>
-            
-          
-
-          
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> Pactolus</a>
+        
+        
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -74,16 +58,26 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
+      </div>
 
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
           
-        </div>
-
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
-            
-            
-                <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#generating-fragmentation-trees">Generating fragmentation trees</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#scoring-spectra-against-trees">Scoring spectra against trees</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#scoring-spectra-against-spectra">Scoring spectra against spectra</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html#data-formats">Data Formats:</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#score-frag-dag-scan-spectrum-data-format">score_frag_dag: Scan/Spectrum data format:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#score-frag-dag-temporary-output-data-format">score_frag_dag: Temporary output data format:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#score-frag-dag-main-output-data-format">score_frag_dag: Main output data format:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#score-frag-dag-file-lookup-table-data-format">score_frag_dag: File Lookup table data format:</a></li>
+</ul>
+</li>
 <li class="toctree-l1 current"><a class="reference internal" href="pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="">generate_frag_dag module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="score_frag_dag.html">score_frag_dag module</a></li>
@@ -92,10 +86,10 @@
 </li>
 </ul>
 
-            
           
-        </div>
+        
       </div>
+      &nbsp;
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -110,13 +104,7 @@
       
       <div class="wy-nav-content">
         <div class="rst-content">
-          
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
+          <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
@@ -125,16 +113,13 @@
     <li>generate_frag_dag module</li>
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="_sources/generate_frag_dag.txt" rel="nofollow"> View page source</a>
-          
+          <a href="_sources/generate_frag_dag.txt" rel="nofollow"> View page source</a>
         
       </li>
   </ul>
   <hr/>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
+          <div role="main" class="document">
             
   <div class="section" id="module-pactolus.generate_frag_dag">
 <span id="generate-frag-dag-module"></span><h1>generate_frag_dag module<a class="headerlink" href="#module-pactolus.generate_frag_dag" title="Permalink to this headline">¶</a></h1>
@@ -288,24 +273,6 @@ this molecule must (i) be fully connected by covalent bonds and
 <dd><p>Main function</p>
 </dd></dl>
 
-<dl class="class">
-<dt id="pactolus.generate_frag_dag.mpi_helper">
-<em class="property">class </em><code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">mpi_helper</code><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#mpi_helper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.mpi_helper" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>Dummy mpi_helper class used to ensure that the code works
-in serial even if the mpi_helper cannot be imported</p>
-<dl class="attribute">
-<dt id="pactolus.generate_frag_dag.mpi_helper.MPI_AVAILABLE">
-<code class="descname">MPI_AVAILABLE</code><em class="property"> = False</em><a class="headerlink" href="#pactolus.generate_frag_dag.mpi_helper.MPI_AVAILABLE" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="staticmethod">
-<dt id="pactolus.generate_frag_dag.mpi_helper.get_rank">
-<em class="property">static </em><code class="descname">get_rank</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#mpi_helper.get_rank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.mpi_helper.get_rank" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
 <dl class="function">
 <dt id="pactolus.generate_frag_dag.nonprefix_combinations">
 <code class="descclassname">pactolus.generate_frag_dag.</code><code class="descname">nonprefix_combinations</code><span class="sig-paren">(</span><em>iterable</em>, <em>max_len</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/generate_frag_dag.html#nonprefix_combinations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.generate_frag_dag.nonprefix_combinations" title="Permalink to this definition">¶</a></dt>
@@ -356,16 +323,15 @@ not bond indices, and also because there is no RWMol.RemoveBonds() vectorized ve
 </div>
 
 
-           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="score_frag_dag.html" class="btn btn-neutral float-right" title="score_frag_dag module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="score_frag_dag.html" class="btn btn-neutral float-right" title="score_frag_dag module">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="pactolus.html" class="btn btn-neutral" title="pactolus Package" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="pactolus.html" class="btn btn-neutral" title="pactolus Package"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -375,13 +341,12 @@ not bond indices, and also because there is no RWMol.RemoveBonds() vectorized ve
   <div role="contentinfo">
     <p>
         &copy; Copyright 2015, Curt R. Fischer, Oliver Ruebel, and Benjamin P. Bowen.
-
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
 </footer>
-
         </div>
       </div>
 

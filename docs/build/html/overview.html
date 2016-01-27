@@ -5,7 +5,6 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Overview &mdash; Pactolus 0.1 documentation</title>
@@ -15,6 +14,7 @@
   
 
   
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
 
   
   
@@ -35,7 +35,7 @@
         <link rel="prev" title="Welcome to Pactolus’s documentation!" href="index.html"/> 
 
   
-  <script src="_static/js/modernizr.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
 
 </head>
 
@@ -45,27 +45,11 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
-          
-
-          
-            <a href="index.html" class="icon icon-home"> Pactolus
-          
-
-          
-          </a>
-
-          
-            
-            
-              <div class="version">
-                0.1
-              </div>
-            
-          
-
-          
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> Pactolus</a>
+        
+        
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -73,33 +57,38 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
+      </div>
 
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
           
-        </div>
-
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
-            
-            
-                <ul class="current">
+              <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="">Overview</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#generating-fragmentation-trees">Generating fragmentation trees</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#scoring-spectra-against-trees">Scoring spectra against trees</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#scoring-many-spectra-against-many-trees">Scoring many spectra against many trees</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scoring-a-single-spectrum-against-a-single-tree">Scoring a single spectrum against a single tree</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#computing-the-matched-atoms">Computing the matched atoms</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="#scoring-spectra-against-trees">Scoring spectra against trees</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#scoring-spectra-against-spectra">Scoring spectra against spectra</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#data-formats">Data Formats:</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#score-frag-dag-scan-spectrum-data-format">score_frag_dag: Scan/Spectrum data format:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#score-frag-dag-temporary-output-data-format">score_frag_dag: Temporary output data format:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#score-frag-dag-main-output-data-format">score_frag_dag: Main output data format:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#score-frag-dag-file-lookup-table-data-format">score_frag_dag: File Lookup table data format:</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="generate_frag_dag.html">generate_frag_dag module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="score_frag_dag.html">score_frag_dag module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spectra_distance.html">spectra_distance module</a></li>
+</ul>
+</li>
 </ul>
 
-            
           
-        </div>
+        
       </div>
+      &nbsp;
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -114,29 +103,20 @@
       
       <div class="wy-nav-content">
         <div class="rst-content">
-          
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
+          <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
     <li>Overview</li>
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="_sources/overview.txt" rel="nofollow"> View page source</a>
-          
+          <a href="_sources/overview.txt" rel="nofollow"> View page source</a>
         
       </li>
   </ul>
   <hr/>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
+          <div role="main" class="document">
             
   <div class="section" id="overview">
 <h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
@@ -182,7 +162,7 @@ the inchi key.</p>
 </div>
 <div class="section" id="computing-the-matched-atoms">
 <h3>Computing the matched atoms<a class="headerlink" href="#computing-the-matched-atoms" title="Permalink to this headline">¶</a></h3>
-<p>The <code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dagcalculate_MIDAS_score.py()</span></code> function can optionally also return the extra
+<p>The <code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.calculate_MIDAS_score.py()</span></code> function can optionally also return the extra
 matching matrix describing which peaks of the spectrum where found as which fragment (node) in the fragmentation tree.
 Using the match matrix we can then locate the atoms that were matched as follows:</p>
 <blockquote>
@@ -204,18 +184,123 @@ complicated since the m/z values of matching peaks are often slightly shifted be
 while accounting for mass tolerance (i.e, shifts in <code class="docutils literal"><span class="pre">m/z</span></code>) and noise (via <code class="docutils literal"><span class="pre">intensity</span></code> thresholds).</p>
 </div>
 </div>
+<div class="section" id="data-formats">
+<h1>Data Formats:<a class="headerlink" href="#data-formats" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="score-frag-dag-scan-spectrum-data-format">
+<h2>score_frag_dag: Scan/Spectrum data format:<a class="headerlink" href="#score-frag-dag-scan-spectrum-data-format" title="Permalink to this headline">¶</a></h2>
+<p>The input scans are usually stored in HDF5 using the following basic data layout. The data may be stored in an
+arbitrary group within the HDF5 and should contain the following groups and datasets:</p>
+<blockquote>
+<div><ul>
+<li><p class="first"><code class="docutils literal"><span class="pre">peak_mz</span></code> : 1D float array with all m/z values for all concatenated spectra.</p>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal"><span class="pre">peak_value</span></code> <span class="classifier-delimiter">:</span> <span class="classifier">1D float array with all intensity values for all concatenated spectra. Must have the same \</span></dt>
+<dd><p class="first last">length as peak_mz.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal"><span class="pre">peak_arrayindex</span></code> <span class="classifier-delimiter">:</span> <span class="classifier">1D (or n-D array) integer array where first dimension is the spectrum index and the last dimension \</span></dt>
+<dd><p class="first last">(in the case of n-D arrays) contains the integer start offset where each spectrum is located in the peak_mz and peak_value  arrays. An n-D array is sometimes used to store additional location data (e.g., the x/y location from which a spectrum is recorded). That additional data will be ignored.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal"><span class="pre">ms1_mz</span></code> or <code class="docutils literal"><span class="pre">precursor_mz1</span></code> <span class="classifier-delimiter">:</span> <span class="classifier">Optional 1D array with the MS1 precursor m/z value for each spectrum.</span></dt>
+<dd><p class="first last">Must have the same length as the number of spectra (i.e, the length of the peak_array_index).
+Alternatively the ms1_mz dataset may also be stored in the spectrum_metadata group.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal"><span class="pre">scan_metadata/</span></code> <span class="classifier-delimiter">:</span> <span class="classifier">Group with additional arrays for per-spectrum metadata that should be passed through. \</span></dt>
+<dd><p class="first last">The first dimension of the arrays should always have the same lenght as the number of spectra.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal"><span class="pre">experiment_metadata/</span></code> <span class="classifier-delimiter">:</span> <span class="classifier">Group with additional arbitrary metadata pertaining to the experiment. This data \</span></dt>
+<dd><p class="first last">will also be pass through as is.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="score-frag-dag-temporary-output-data-format">
+<h2>score_frag_dag: Temporary output data format:<a class="headerlink" href="#score-frag-dag-temporary-output-data-format" title="Permalink to this headline">¶</a></h2>
+<p>When scoring spectra using <a class="reference internal" href="score_frag_dag.html#module-pactolus.score_frag_dag" title="pactolus.score_frag_dag"><code class="xref py py-mod docutils literal"><span class="pre">pactolus.score_frag_dag</span></code></a> we can optionally incrementally write the scoring results
+to temporary files. The resulting output files have the following structure:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">For each spectrum a new group <code class="docutils literal"><span class="pre">spectrum_#s</span></code> is created where <code class="docutils literal"><span class="pre">#s</span></code> is the spectrum index. Within this group,
+the following datasets are created:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">score_matrix</span></code> : The 2D score matrix with all scores. This matrix has a shape (n_scans, len(file_lookup_table)).</li>
+<li><code class="docutils literal"><span class="pre">match_matrix_#s_#c</span></code> where #s is the spectrum index and #c is the compound index. Each of these datasets contains the match matrix for the corresponding spectrum / compound combination. A match matrix is a 2D bool array with a shape of <code class="docutils literal"><span class="pre">(n_peaks,</span> <span class="pre">n_nodes)</span></code> where <code class="docutils literal"><span class="pre">n_peaks`</span> <span class="pre">is</span> <span class="pre">the</span> <span class="pre">number</span> <span class="pre">of</span> <span class="pre">peaks</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">spectrum</span> <span class="pre">and</span> <span class="pre">\</span>
+<span class="pre">``n_nodes</span></code> is the number of nodes in the tree.</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<p>When running in parallel, one temporary output file will be generated per MPI rank (i.e, compute core).</p>
+</div>
+<div class="section" id="score-frag-dag-main-output-data-format">
+<h2>score_frag_dag: Main output data format:<a class="headerlink" href="#score-frag-dag-main-output-data-format" title="Permalink to this headline">¶</a></h2>
+<p>The main ouput data format is similar to the temporary output data format, but consolidates all results in a more
+compact structure to describe results across a collection of spectra scored against the same set of compounds. The
+output results may be stored in an arbitray user-defined group which will contain the following datasets and groups.</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt><code class="docutils literal"><span class="pre">score_matrix</span></code> <span class="classifier-delimiter">:</span> <span class="classifier">The 2D score matrix with all scores. This matrix has a shape (n_scans, len(file_lookup_table))\</span></dt>
+<dd><p class="first last">and contains floating point numbers.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal"><span class="pre">score_rank_matrix</span></code> <span class="classifier-delimiter">:</span> <span class="classifier">2D integer matrix containing the ranking of the scores for each scan. -1 is used \</span></dt>
+<dd><p class="first last">for scores that were not ranked because they had a value of 0 (i.e., scores that were not computed)</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">match_matrix_#s_#c</span></code> where #s is the spectrum index and #c is the compound index. Each of these datasets contains the match matrix for the corresponding spectrum / compound combination. A match matrix is a 2D bool array with a shape of <code class="docutils literal"><span class="pre">(n_peaks,</span> <span class="pre">n_nodes)</span></code> where <code class="docutils literal"><span class="pre">n_peaks</span></code> is the number of peaks in the spectrum and <code class="docutils literal"><span class="pre">n_nodes</span></code> is the number of nodes in the tree. The match matrix datasets are optional.</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">tree_file_lookup_table</span></code> : 1D compound dataset with the lookup table used to define the tree-files used for scoring. The dtype is defined in <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE" title="pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE"><code class="xref py py-mod docutils literal"><span class="pre">pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE</span></code></a> .</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">num_matched</span></code> Optional dataset describing the number of peaks matched as part of a given score. If available this is a 2D integer matrix of the same shape as <code class="docutils literal"><span class="pre">score_matrix</span></code>. Only available if the match matrix data is tracked.</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">scan_metadata/</span></code> : Group with additional, optional per-spectrum metadata arrays. This group may contain arbitrary user-defined per-spectrum metadata. Here we usually assume that we have arrays where the first dimension matches the length and ordering of the scans that were scored. Usually we here add the array <code class="docutils literal"><span class="pre">num_peaks</span></code> indicating the number of peaks for each spectrum to help with the evaluation of the score even if the original scan data may not be easily accesible.</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">experiment_metadata/</span></code> : Group with additional, optional general metadata about the experiment.
+This group may contain arbitrary user metadata about the experiment.</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">compound_metadata/</span></code> : Group with additional metadata about the compounds. This typically includes the fields defined by the py:mod:<cite>pactolus.score_frag_dag.METACYC_DTYPE`</cite> ,e.g., the <code class="docutils literal"><span class="pre">id</span></code>, <code class="docutils literal"><span class="pre">name</span></code>, <code class="docutils literal"><span class="pre">inchi</span></code>, <code class="docutils literal"><span class="pre">lins</span></code>, <code class="docutils literal"><span class="pre">inchi_key</span></code>, <code class="docutils literal"><span class="pre">mass</span></code>.</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">scans/</span></code> : Optional group with the actual scan data stored using the scan data format described above.</p>
+</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="score-frag-dag-file-lookup-table-data-format">
+<h2>score_frag_dag: File Lookup table data format:<a class="headerlink" href="#score-frag-dag-file-lookup-table-data-format" title="Permalink to this headline">¶</a></h2>
+<p>This is usually a binary numpu <a href="#id1"><span class="problematic" id="id2">``</span></a>.npy` file with a 1D array with the dtype defined in <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE" title="pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE"><code class="xref py py-mod docutils literal"><span class="pre">pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE</span></code></a> defining for each molecular fragmentation tree: i) the path to the HDF5 tree file and ii) the primary mass of the corresponding molecule, which is used to search for trees with a matching precusor mz. The array may also be stored in an HDF5 file in a dataset with a corresponding compound dtype.</p>
+</div>
+</div>
 
 
-           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="pactolus.html" class="btn btn-neutral float-right" title="pactolus Package" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="pactolus.html" class="btn btn-neutral float-right" title="pactolus Package">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral" title="Welcome to Pactolus’s documentation!" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral" title="Welcome to Pactolus’s documentation!"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -225,13 +310,12 @@ while accounting for mass tolerance (i.e, shifts in <code class="docutils litera
   <div role="contentinfo">
     <p>
         &copy; Copyright 2015, Curt R. Fischer, Oliver Ruebel, and Benjamin P. Bowen.
-
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
 </footer>
-
         </div>
       </div>
 

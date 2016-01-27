@@ -5,7 +5,6 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Overview: module code &mdash; Pactolus 0.1 documentation</title>
@@ -15,6 +14,7 @@
   
 
   
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
 
   
   
@@ -33,7 +33,7 @@
     <link rel="top" title="Pactolus 0.1 documentation" href="../index.html"/> 
 
   
-  <script src="../_static/js/modernizr.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
 
 </head>
 
@@ -43,27 +43,11 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
-          
-
-          
-            <a href="../index.html" class="icon icon-home"> Pactolus
-          
-
-          
-          </a>
-
-          
-            
-            
-              <div class="version">
-                0.1
-              </div>
-            
-          
-
-          
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> Pactolus</a>
+        
+        
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -71,23 +55,38 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
+      </div>
 
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
           
-        </div>
-
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
-            
-            
-                <ul>
-<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a></li>
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../overview.html#generating-fragmentation-trees">Generating fragmentation trees</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../overview.html#scoring-spectra-against-trees">Scoring spectra against trees</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../overview.html#scoring-spectra-against-spectra">Scoring spectra against spectra</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html#data-formats">Data Formats:</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../overview.html#score-frag-dag-scan-spectrum-data-format">score_frag_dag: Scan/Spectrum data format:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../overview.html#score-frag-dag-temporary-output-data-format">score_frag_dag: Temporary output data format:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../overview.html#score-frag-dag-main-output-data-format">score_frag_dag: Main output data format:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../overview.html#score-frag-dag-file-lookup-table-data-format">score_frag_dag: File Lookup table data format:</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../generate_frag_dag.html">generate_frag_dag module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../score_frag_dag.html">score_frag_dag module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../spectra_distance.html">spectra_distance module</a></li>
+</ul>
+</li>
 </ul>
 
-            
           
-        </div>
+        
       </div>
+      &nbsp;
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -102,27 +101,18 @@
       
       <div class="wy-nav-content">
         <div class="rst-content">
-          
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
+          <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
     <li>Overview: module code</li>
       <li class="wy-breadcrumbs-aside">
         
-          
-        
       </li>
   </ul>
   <hr/>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
+          <div role="main" class="document">
             
   <h1>All modules for which code is available</h1>
 <ul><li><a href="pactolus/generate_frag_dag.html">pactolus.generate_frag_dag</a></li>
@@ -130,7 +120,6 @@
 <li><a href="pactolus/spectra_distance.html">pactolus.spectra_distance</a></li>
 </ul>
 
-           </div>
           </div>
           <footer>
   
@@ -140,13 +129,12 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2015, Curt R. Fischer, Oliver Ruebel, and Benjamin P. Bowen.
-
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
 </footer>
-
         </div>
       </div>
 
