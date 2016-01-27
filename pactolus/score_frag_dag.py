@@ -628,11 +628,15 @@ def make_pactolus_hit_table(pactolus_results, table_file, original_db, match_mat
             npeaks = 0
             nmatched_peaks = 0
             if match_matrix is not None:
-                matches = match_matrix[scan_index][hit_index]
-                # Since we only look at non-zero scores we should always have a match matrix but just be sure we check
-                if matches is not None:
+                try:
+                    matches = match_matrix[(scan_index, hit_index)]
                     npeaks = matches.size
                     nmatched_peaks = matches.sum()
+                except KeyError:
+                    # Since we only look at non-zero scores we should always find match matrix but just
+                    # be sure we check
+                    log_helper.error(__name__, "Could not find match matrix for " + str((scan_index, hit_index)))
+
             # Compule the hittable entry
             hit_table[idx] = (scores[hit_index],
                               db_arr['metacyc_id'][hit_index],
