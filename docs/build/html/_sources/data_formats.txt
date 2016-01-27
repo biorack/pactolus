@@ -1,6 +1,43 @@
 Data Formats
 ============
 
+.. _frag_tree_data_format:
+
+Fragementation tree data format (generate_frag_dag)
+---------------------------------------------------
+
+Fragmentation trees are stored in HDF5 in a group where the group name is the inchi_key. Each tree-group
+contains the following datasets:
+
+    * ``FragTree_at_max_depth=#`` is the fragmentation tree dataset. The fragmentation tree is stored as a  1D compound dataset listing all fragments sorted by their mass. The dataset contains the fragments for the molecule up to the indicated fragmentation depth, i.e., we break at most ``max_depth`` bonds to generate a fragment. Each fragment in the tree is unique in that it appears only once in the fragmentation tree and we store only the shortest bond breakage path that leads to the generation of the fragment. The compound data type stores the following information:
+
+        * ``atom_bool_arr`` is a bool vector consisting of ``#atoms`` values describing which atoms of the fragmented molecule are part of the fragment.
+        * ``bond_bool_arr`` is a bool vector consisting of ``#bonds`` values describing the shortest bond breakage path giving rise to the fragment, i.e., which fragments do we need to break to create the fragment.
+        * ``mass_vec`` is a 64bit floating point number with the mass of the fragment
+        * ``parent_vec`` is a 64bit integer indicating the index of parent fragment (using 0-based indexing) in the fragmention tree.
+
+    * In addition, the following information is stored as attributes on the group:
+
+        * ``inchi`` : Inchi string for the molecule
+        * ``num_atoms`` : Number of atoms in the molecule
+        * ``num_bonds`` : Number of bonds in the molecule
+        * ``num_fragments`` : Number of fragments stored in the tree
+        * ``max_depth`` : The maximum fragmentation depth
+        * ``time_to_build`` : The time in seconds used to build the tree.
+
+While technically one could store an arbitrary number of trees in an HDF5 file, ``score_frag_dag`` currently assumes that a single tree be stored in each HDF5 file.
+
+
+.. _tree_file_lookup_data_format:
+
+Tree file lookup table data format (score_frag_dag)
+---------------------------------------------------
+
+This is usually a binary numpy ``.npy` file with a 1D array with the dtype defined in :py:mod:`pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE` defining for each molecular fragmentation tree: i) the path to the HDF5 tree file and ii) the primary mass of the corresponding molecule, which is used to search for trees with a matching precusor mz. The array may also be stored in an HDF5 file in a dataset with a corresponding compound dtype. The tree lookup file can be generated using the :py:func:`pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass` function. Existing tree-file lookup tables can be loaded from file via :py:func:`pactolus.score_frag_dag.load_file_lookup_table` (which can also generate lookup tables from a textfile with a list of tree files or a directory with tree files).
+
+
+.. _spectrum_data_format:
+
 Scan/Spectrum data format (score_frag_dag)
 -----------------------------------------
 
@@ -59,32 +96,5 @@ In addition, the following optional attributes are typically collected with the 
     * All arguments provided to :py:func:`pactolus.score_frag_dag.main` either via the command-line or as explicit keyword arguments
 
 
-Tree file lookup table data format (score_frag_dag)
----------------------------------------------------
-
-This is usually a binary numpy ``.npy` file with a 1D array with the dtype defined in :py:mod:`pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE` defining for each molecular fragmentation tree: i) the path to the HDF5 tree file and ii) the primary mass of the corresponding molecule, which is used to search for trees with a matching precusor mz. The array may also be stored in an HDF5 file in a dataset with a corresponding compound dtype. The tree lookup file can be generated using the :py:func:`pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass` function. Existing tree-file lookup tables can be loaded from file via :py:func:`pactolus.score_frag_dag.load_file_lookup_table` (which can also generate lookup tables from a textfile with a list of tree files or a directory with tree files).
 
 
-Fragementation tree data format (generate_frag_dag)
----------------------------------------------------
-
-Fragmentation trees are stored in HDF5 in a group where the group name is the inchi_key. Each tree-group
-contains the following datasets:
-
-    * ``FragTree_at_max_depth=#`` is the fragmentation tree dataset. The fragmentation tree is stored as a  1D compound dataset listing all fragments sorted by their mass. The dataset contains the fragments for the molecule up to the indicated fragmentation depth, i.e., we break at most ``max_depth`` bonds to generate a fragment. Each fragment in the tree is unique in that it appears only once in the fragmentation tree and we store only the shortest bond breakage path that leads to the generation of the fragment. The compound data type stores the following information:
-
-        * ``atom_bool_arr`` is a bool vector consisting of ``#atoms`` values describing which atoms of the fragmented molecule are part of the fragment.
-        * ``bond_bool_arr`` is a bool vector consisting of ``#bonds`` values describing the shortest bond breakage path giving rise to the fragment, i.e., which fragments do we need to break to create the fragment.
-        * ``mass_vec`` is a 64bit floating point number with the mass of the fragment
-        * ``parent_vec`` is a 64bit integer indicating the index of parent fragment (using 0-based indexing) in the fragmention tree.
-
-    * In addition, the following information is stored as attributes on the group:
-
-        * ``inchi`` : Inchi string for the molecule
-        * ``num_atoms`` : Number of atoms in the molecule
-        * ``num_bonds`` : Number of bonds in the molecule
-        * ``num_fragments`` : Number of fragments stored in the tree
-        * ``max_depth`` : The maximum fragmentation depth
-        * ``time_to_build`` : The time in seconds used to build the tree.
-
-While technically one could store an arbitrary number of trees in an HDF5 file, ``score_frag_dag`` currently assumes that a single tree be stored in each HDF5 file.

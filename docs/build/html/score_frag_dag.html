@@ -72,11 +72,11 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="data_formats.html">Data Formats</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="data_formats.html#fragementation-tree-data-format-generate-frag-dag">Fragementation tree data format (generate_frag_dag)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data_formats.html#tree-file-lookup-table-data-format-score-frag-dag">Tree file lookup table data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="data_formats.html#scan-spectrum-data-format-score-frag-dag">Scan/Spectrum data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="data_formats.html#scoring-temporary-output-data-format-score-frag-dag">Scoring temporary output data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="data_formats.html#scoring-main-output-data-format-score-frag-dag">Scoring main output data format (score_frag_dag)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="data_formats.html#tree-file-lookup-table-data-format-score-frag-dag">Tree file lookup table data format (score_frag_dag)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="data_formats.html#fragementation-tree-data-format-generate-frag-dag">Fragementation tree data format (generate_frag_dag)</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a><ul class="current">
@@ -494,7 +494,17 @@ The numpy dtype is type = [(&#8216;filename&#8217;, &#8216;a400&#8217;),(&#8216;
 <dl class="function">
 <dt id="pactolus.score_frag_dag.make_pactolus_hit_table">
 <code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">make_pactolus_hit_table</code><span class="sig-paren">(</span><em>pactolus_results</em>, <em>table_file</em>, <em>original_db</em>, <em>match_matrix=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#make_pactolus_hit_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.make_pactolus_hit_table" title="Permalink to this definition">¶</a></dt>
-<dd><p>Makes a hit table in the same format as lbl-midas for comparison of the two algorithms</p>
+<dd><p>Makes a hit table in the same format as lbl-midas for comparison of the two algorithms..</p>
+<p>A hit table is a structured numpy array that summarizes all scores for a single spectrum. Each entry
+in the hit-table describes the <cite>score</cite>, <cite>id</cite>, <cite>name</cite>,  <cite>mass</cite>, <cite>n_peaks</cite>, <cite>n_match</cite> for a given
+fragmentation tree (i.e., molecule) against the given spectrum (see also <a class="reference internal" href="#pactolus.score_frag_dag.HIT_TABLE_DTYPE" title="pactolus.score_frag_dag.HIT_TABLE_DTYPE"><code class="xref py py-data docutils literal"><span class="pre">pactolus.score_frag_dag.HIT_TABLE_DTYPE</span></code></a> ).
+The <cite>n_peaks</cite> and <cite>n_match are only set if the match_matrix input is provided. This function uses
+``pactolus.score_frag_dag.crossref_to_db`</cite> to cross-reference pactolus fragmentation trees
+(typically identified via inchi-keys) against the molecular data base file to retrieve real molecule names.
+An example molecular database file is available, e.g,
+from <a class="reference external" href="http://midas-omicsbio.ornl.gov/MetaCyc.mdb">http://midas-omicsbio.ornl.gov/MetaCyc.mdb</a>. The
+main important parts in this case is the second column with the molecule name and the third column with
+the inchi key.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -505,11 +515,12 @@ The numpy dtype is type = [(&#8216;filename&#8217;, &#8216;a400&#8217;),(&#8216;
 was used to generate pactolus results.  Or the numpy array directly.</li>
 <li><strong>original_db</strong> &#8211; string,     full path to flat text file containing the molecule DB used to generate the
 fragmentation trees. The primary use for this is to enable lookup of molecule names.</li>
-<li><strong>match_matrix</strong> &#8211; Optional input. List of lists of match matrices (one matrix per scan and hit).
-Each entry is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
-if given peak matches given node of frag_dag. An entry will be None in case that
-the hit-score was 0. This is required to fill the number of peaks and matched peaks
-entries in the able. If not available then the values will be set to 0.</li>
+<li><strong>match_matrix</strong> &#8211; Optional input.  Dictionary of  match matrices (one matrix per non-zero score for a given scan and
+compound combination). The keys are tuples of integers describing the index of
+scan and compound in the returned score_matrix.
+Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
+if given peak matches given node of frag_dag. The return value will be None
+if want_match_matrix is set to False (Default)</li>
 </ul>
 </td>
 </tr>
@@ -642,25 +653,20 @@ Dictionary of  match matrices (one matrix per non-zero score for a given scan an
 compound combination). The keys are tuples of integers describing the index of
 scan and compound in the returned score_matrix.
 Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
-if given peak matches given node of frag_dag. An entry will be None in case that
-the hit-score was 0. The return value will be None if want_match_matrix is set
-to False (Default)</p>
+if given peak matches given node of frag_dag. The return value will be None if
+want_match_matrix is set to False (Default)</p>
 </td>
 </tr>
 </tbody>
 </table>
-<dl class="docutils">
-<dt>Unlike score_scan_list_against_trees, this function is designed to work on numpy arrays of scans.  It is more</dt>
-<dd><dl class="first last docutils">
-<dt>appropriate for imaging data where:</dt>
-<dd><ol class="first last arabic simple">
+<p>Unlike score_scan_list_against_trees, this function is designed to work on numpy arrays of scans.  It is more
+appropriate for imaging data where:</p>
+<blockquote>
+<div><ol class="arabic simple">
 <li>an common MS1 precursor has been fragmented and scanned many times/places, as long as</li>
 <li>a global peak finder has been run on all scans, so peak intensities exist for every peak at every pixel</li>
 </ol>
-</dd>
-</dl>
-</dd>
-</dl>
+</div></blockquote>
 </dd></dl>
 
 <dl class="function">
@@ -788,9 +794,8 @@ Dictionary of  match matrices (one matrix per non-zero score for a given scan an
 compound combination). The keys are tuples of integers describing the index of
 scan and compound in the returned score_matrix.
 Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
-if given peak matches given node of frag_dag. An entry will be None in case that
-the hit-score was 0. The return value will be None if want_match_matrix is set
-to False (Default)</p>
+if given peak matches given node of frag_dag. The return value will be None if
+want_match_matrix is set to False (Default)</p>
 </td>
 </tr>
 </tbody>

@@ -70,11 +70,11 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../data_formats.html">Data Formats</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../data_formats.html#fragementation-tree-data-format-generate-frag-dag">Fragementation tree data format (generate_frag_dag)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../data_formats.html#tree-file-lookup-table-data-format-score-frag-dag">Tree file lookup table data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../data_formats.html#scan-spectrum-data-format-score-frag-dag">Scan/Spectrum data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../data_formats.html#scoring-temporary-output-data-format-score-frag-dag">Scoring temporary output data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../data_formats.html#scoring-main-output-data-format-score-frag-dag">Scoring main output data format (score_frag_dag)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../data_formats.html#tree-file-lookup-table-data-format-score-frag-dag">Tree file lookup table data format (score_frag_dag)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../data_formats.html#fragementation-tree-data-format-generate-frag-dag">Fragementation tree data format (generate_frag_dag)</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a><ul>
@@ -480,13 +480,12 @@
 <span class="sd">                              compound combination). The keys are tuples of integers describing the index of</span>
 <span class="sd">                              scan and compound in the returned score_matrix.</span>
 <span class="sd">                              Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True</span>
-<span class="sd">                              if given peak matches given node of frag_dag. An entry will be None in case that</span>
-<span class="sd">                              the hit-score was 0. The return value will be None if want_match_matrix is set</span>
-<span class="sd">                              to False (Default)</span>
+<span class="sd">                              if given peak matches given node of frag_dag. The return value will be None if</span>
+<span class="sd">                              want_match_matrix is set to False (Default)</span>
 
 
 <span class="sd">    Unlike score_scan_list_against_trees, this function is designed to work on numpy arrays of scans.  It is more</span>
-<span class="sd">     appropriate for imaging data where:</span>
+<span class="sd">    appropriate for imaging data where:</span>
 <span class="sd">        1. an common MS1 precursor has been fragmented and scanned many times/places, as long as</span>
 <span class="sd">        2. a global peak finder has been run on all scans, so peak intensities exist for every peak at every pixel</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -611,9 +610,8 @@
 <span class="sd">                              compound combination). The keys are tuples of integers describing the index of</span>
 <span class="sd">                              scan and compound in the returned score_matrix.</span>
 <span class="sd">                              Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True</span>
-<span class="sd">                              if given peak matches given node of frag_dag. An entry will be None in case that</span>
-<span class="sd">                              the hit-score was 0. The return value will be None if want_match_matrix is set</span>
-<span class="sd">                              to False (Default)</span>
+<span class="sd">                              if given peak matches given node of frag_dag. The return value will be None if</span>
+<span class="sd">                              want_match_matrix is set to False (Default)</span>
 
 <span class="sd">    Unlike score_peakcube_against_trees, this function is designed to work on _lists_ of scans.  It is more</span>
 <span class="sd">     appropriate for scans directly extracted from mzML files or for centroided data.  This function does NOT</span>
@@ -719,18 +717,30 @@
 </div>
 <div class="viewcode-block" id="make_pactolus_hit_table"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.make_pactolus_hit_table">[docs]</a><span class="k">def</span> <span class="nf">make_pactolus_hit_table</span><span class="p">(</span><span class="n">pactolus_results</span><span class="p">,</span> <span class="n">table_file</span><span class="p">,</span> <span class="n">original_db</span><span class="p">,</span> <span class="n">match_matrix</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Makes a hit table in the same format as lbl-midas for comparison of the two algorithms</span>
+<span class="sd">    Makes a hit table in the same format as lbl-midas for comparison of the two algorithms..</span>
+
+<span class="sd">    A hit table is a structured numpy array that summarizes all scores for a single spectrum. Each entry</span>
+<span class="sd">    in the hit-table describes the `score`, `id`, `name`,  `mass`, `n_peaks`, `n_match` for a given</span>
+<span class="sd">    fragmentation tree (i.e., molecule) against the given spectrum (see also :py:data:`pactolus.score_frag_dag.HIT_TABLE_DTYPE` ).</span>
+<span class="sd">    The `n_peaks` and `n_match are only set if the match_matrix input is provided. This function uses</span>
+<span class="sd">    ``pactolus.score_frag_dag.crossref_to_db`` to cross-reference pactolus fragmentation trees</span>
+<span class="sd">    (typically identified via inchi-keys) against the molecular data base file to retrieve real molecule names.</span>
+<span class="sd">    An example molecular database file is available, e.g,</span>
+<span class="sd">    from `http://midas-omicsbio.ornl.gov/MetaCyc.mdb &lt;http://midas-omicsbio.ornl.gov/MetaCyc.mdb&gt;`_. The</span>
+<span class="sd">    main important parts in this case is the second column with the molecule name and the third column with</span>
+<span class="sd">    the inchi key.</span>
 
 <span class="sd">    :param pactolus_results: ndarray,    n_compounds by n_scans matrix of pactolus scores</span>
 <span class="sd">    :param table_file:      string,     full path to .npy file containing tree file names and parent masses that</span>
 <span class="sd">                                            was used to generate pactolus results.  Or the numpy array directly.</span>
 <span class="sd">    :param original_db:     string,     full path to flat text file containing the molecule DB used to generate the</span>
 <span class="sd">                        fragmentation trees. The primary use for this is to enable lookup of molecule names.</span>
-<span class="sd">    :param match_matrix:     Optional input. List of lists of match matrices (one matrix per scan and hit).</span>
-<span class="sd">                              Each entry is a bool matrix with n_peaks columns and n_nodes rows. Elements are True</span>
-<span class="sd">                              if given peak matches given node of frag_dag. An entry will be None in case that</span>
-<span class="sd">                              the hit-score was 0. This is required to fill the number of peaks and matched peaks</span>
-<span class="sd">                              entries in the able. If not available then the values will be set to 0.</span>
+<span class="sd">    :param match_matrix:     Optional input.  Dictionary of  match matrices (one matrix per non-zero score for a given scan and</span>
+<span class="sd">                              compound combination). The keys are tuples of integers describing the index of</span>
+<span class="sd">                              scan and compound in the returned score_matrix.</span>
+<span class="sd">                              Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True</span>
+<span class="sd">                              if given peak matches given node of frag_dag. The return value will be None</span>
+<span class="sd">                              if want_match_matrix is set to False (Default)</span>
 
 <span class="sd">    :return: hit_table_list, a list of hit_tables</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -749,11 +759,15 @@
             <span class="n">npeaks</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="n">nmatched_peaks</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">if</span> <span class="n">match_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-                <span class="n">matches</span> <span class="o">=</span> <span class="n">match_matrix</span><span class="p">[</span><span class="n">scan_index</span><span class="p">][</span><span class="n">hit_index</span><span class="p">]</span>
-                <span class="c"># Since we only look at non-zero scores we should always have a match matrix but just be sure we check</span>
-                <span class="k">if</span> <span class="n">matches</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">matches</span> <span class="o">=</span> <span class="n">match_matrix</span><span class="p">[(</span><span class="n">scan_index</span><span class="p">,</span> <span class="n">hit_index</span><span class="p">)]</span>
                     <span class="n">npeaks</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">size</span>
                     <span class="n">nmatched_peaks</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="c"># Since we only look at non-zero scores we should always find match matrix but just</span>
+                    <span class="c"># be sure we check</span>
+                    <span class="n">log_helper</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;Could not find match matrix for &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">((</span><span class="n">scan_index</span><span class="p">,</span> <span class="n">hit_index</span><span class="p">)))</span>
+
             <span class="c"># Compule the hittable entry</span>
             <span class="n">hit_table</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">hit_index</span><span class="p">],</span>
                               <span class="n">db_arr</span><span class="p">[</span><span class="s">&#39;metacyc_id&#39;</span><span class="p">][</span><span class="n">hit_index</span><span class="p">],</span>
@@ -1868,11 +1882,15 @@
                                                                <span class="n">mpi_root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">output_clean</span><span class="p">:</span>
         <span class="n">log_helper</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;The output target is not save for use (e.g. colliding data already exists): &quot;</span>
-                         <span class="o">+</span> <span class="n">output_filepath</span> <span class="o">+</span> <span class="s">&quot;:&quot;</span> <span class="o">+</span> <span class="n">output_grouppath</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+                         <span class="o">+</span> <span class="n">output_filepath</span> <span class="o">+</span> <span class="s">&quot;:&quot;</span> <span class="o">+</span> <span class="n">output_grouppath</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> <span class="s">&quot;TIP:Please clean up the output target or &quot;</span> <span class="o">+</span>
+                         <span class="s">&quot;set &#39;--clean_output True to attempt to automatically delete colliding files.&quot;</span> <span class="p">,</span>
+                         <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
         <span class="nb">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">tempdir_clean</span><span class="p">:</span>
         <span class="n">log_helper</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;The tempdir target is not save for use (e.g. colliding data already exists): &quot;</span>
-                         <span class="o">+</span> <span class="n">tempdir</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+                         <span class="o">+</span> <span class="n">tempdir</span> <span class="o">+</span> <span class="s">&quot; </span><span class="se">\n</span><span class="s"> TIP: Please clean up the tempdir or set &#39;--clean_tempdir True` to attempt to &quot;</span> <span class="o">+</span>
+                         <span class="s">&quot;automatically delte any colliding files.&quot;</span><span class="p">,</span>
+                         <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
         <span class="nb">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
 
@@ -1882,14 +1900,20 @@
 
     <span class="n">scan_list</span><span class="p">,</span> <span class="n">scan_metadata</span><span class="p">,</span> <span class="n">experiment_metadata</span> <span class="o">=</span> <span class="n">load_scan_data_hdf5</span><span class="p">(</span><span class="n">filepath</span><span class="o">=</span><span class="n">input_filepath</span><span class="p">,</span>
                                                                        <span class="n">grouppath</span><span class="o">=</span><span class="n">input_grouppath</span><span class="p">)</span>
-    <span class="n">ms1_mz</span> <span class="o">=</span> <span class="n">scan_metadata</span><span class="p">[</span><span class="s">&#39;ms1_mz&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s">&#39;ms1_mz&#39;</span> <span class="ow">in</span> <span class="n">scan_metadata</span> <span class="k">else</span> <span class="bp">None</span>
 
-    <span class="k">if</span> <span class="n">cl_precursor_mz</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="c"># Determine the ms1_mz, i.e., the precursor m/z</span>
+    <span class="n">ms1_mz</span> <span class="o">=</span> <span class="n">scan_metadata</span><span class="p">[</span><span class="s">&#39;ms1_mz&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s">&#39;ms1_mz&#39;</span> <span class="ow">in</span> <span class="n">scan_metadata</span> <span class="k">else</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="n">cl_precursor_mz</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>   <span class="c"># Overwrite the precursor m/z with the user-defined m/z if necessary</span>
         <span class="k">if</span> <span class="n">ms1_mz</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">log_helper</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span>
                             <span class="s">&#39;Precursor m/z values stored in the input file overwritten by command-line arg value.&#39;</span><span class="p">,</span>
-                            <span class="n">mpi_root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">,</span> <span class="n">mpi_helper</span><span class="o">=</span><span class="n">mpi_helper</span><span class="p">)</span>
-        <span class="n">mz1_mz</span> <span class="o">=</span> <span class="n">cl_precursor_mz</span>
+                            <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">)</span>
+        <span class="n">ms1_mz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">scan_list</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;float&#39;</span><span class="p">)</span>
+        <span class="n">ms1_mz</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">cl_precursor_mz</span>
+
+    <span class="k">if</span> <span class="n">ms1_mz</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">log_helper</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;Missing precursor m/z for the spectra/scans.&quot;</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+        <span class="nb">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
     <span class="c"># Load the file lookup table</span>
     <span class="c"># TODO: Possibly optimize lookup table generaltion by performing only on mpi root sending to other ranks via MPI</span>

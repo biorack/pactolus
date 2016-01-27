@@ -71,11 +71,11 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="">Data Formats</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#fragementation-tree-data-format-generate-frag-dag">Fragementation tree data format (generate_frag_dag)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tree-file-lookup-table-data-format-score-frag-dag">Tree file lookup table data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#scan-spectrum-data-format-score-frag-dag">Scan/Spectrum data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#scoring-temporary-output-data-format-score-frag-dag">Scoring temporary output data format (score_frag_dag)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#scoring-main-output-data-format-score-frag-dag">Scoring main output data format (score_frag_dag)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#tree-file-lookup-table-data-format-score-frag-dag">Tree file lookup table data format (score_frag_dag)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#fragementation-tree-data-format-generate-frag-dag">Fragementation tree data format (generate_frag_dag)</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="pactolus.html"><code class="docutils literal"><span class="pre">pactolus</span></code> Package</a><ul>
@@ -121,8 +121,44 @@
             
   <div class="section" id="data-formats">
 <h1>Data Formats<a class="headerlink" href="#data-formats" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="fragementation-tree-data-format-generate-frag-dag">
+<span id="frag-tree-data-format"></span><h2>Fragementation tree data format (generate_frag_dag)<a class="headerlink" href="#fragementation-tree-data-format-generate-frag-dag" title="Permalink to this headline">¶</a></h2>
+<p>Fragmentation trees are stored in HDF5 in a group where the group name is the inchi_key. Each tree-group
+contains the following datasets:</p>
+<blockquote>
+<div><ul>
+<li><p class="first"><code class="docutils literal"><span class="pre">FragTree_at_max_depth=#</span></code> is the fragmentation tree dataset. The fragmentation tree is stored as a  1D compound dataset listing all fragments sorted by their mass. The dataset contains the fragments for the molecule up to the indicated fragmentation depth, i.e., we break at most <code class="docutils literal"><span class="pre">max_depth</span></code> bonds to generate a fragment. Each fragment in the tree is unique in that it appears only once in the fragmentation tree and we store only the shortest bond breakage path that leads to the generation of the fragment. The compound data type stores the following information:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">atom_bool_arr</span></code> is a bool vector consisting of <code class="docutils literal"><span class="pre">#atoms</span></code> values describing which atoms of the fragmented molecule are part of the fragment.</li>
+<li><code class="docutils literal"><span class="pre">bond_bool_arr</span></code> is a bool vector consisting of <code class="docutils literal"><span class="pre">#bonds</span></code> values describing the shortest bond breakage path giving rise to the fragment, i.e., which fragments do we need to break to create the fragment.</li>
+<li><code class="docutils literal"><span class="pre">mass_vec</span></code> is a 64bit floating point number with the mass of the fragment</li>
+<li><code class="docutils literal"><span class="pre">parent_vec</span></code> is a 64bit integer indicating the index of parent fragment (using 0-based indexing) in the fragmention tree.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">In addition, the following information is stored as attributes on the group:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">inchi</span></code> : Inchi string for the molecule</li>
+<li><code class="docutils literal"><span class="pre">num_atoms</span></code> : Number of atoms in the molecule</li>
+<li><code class="docutils literal"><span class="pre">num_bonds</span></code> : Number of bonds in the molecule</li>
+<li><code class="docutils literal"><span class="pre">num_fragments</span></code> : Number of fragments stored in the tree</li>
+<li><code class="docutils literal"><span class="pre">max_depth</span></code> : The maximum fragmentation depth</li>
+<li><code class="docutils literal"><span class="pre">time_to_build</span></code> : The time in seconds used to build the tree.</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<p>While technically one could store an arbitrary number of trees in an HDF5 file, <code class="docutils literal"><span class="pre">score_frag_dag</span></code> currently assumes that a single tree be stored in each HDF5 file.</p>
+</div>
+<div class="section" id="tree-file-lookup-table-data-format-score-frag-dag">
+<span id="tree-file-lookup-data-format"></span><h2>Tree file lookup table data format (score_frag_dag)<a class="headerlink" href="#tree-file-lookup-table-data-format-score-frag-dag" title="Permalink to this headline">¶</a></h2>
+<p>This is usually a binary numpy <a href="#id1"><span class="problematic" id="id2">``</span></a>.npy` file with a 1D array with the dtype defined in <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE" title="pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE"><code class="xref py py-mod docutils literal"><span class="pre">pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE</span></code></a> defining for each molecular fragmentation tree: i) the path to the HDF5 tree file and ii) the primary mass of the corresponding molecule, which is used to search for trees with a matching precusor mz. The array may also be stored in an HDF5 file in a dataset with a corresponding compound dtype. The tree lookup file can be generated using the <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass" title="pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass"><code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass()</span></code></a> function. Existing tree-file lookup tables can be loaded from file via <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.load_file_lookup_table" title="pactolus.score_frag_dag.load_file_lookup_table"><code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.load_file_lookup_table()</span></code></a> (which can also generate lookup tables from a textfile with a list of tree files or a directory with tree files).</p>
+</div>
 <div class="section" id="scan-spectrum-data-format-score-frag-dag">
-<h2>Scan/Spectrum data format (score_frag_dag)<a class="headerlink" href="#scan-spectrum-data-format-score-frag-dag" title="Permalink to this headline">¶</a></h2>
+<span id="spectrum-data-format"></span><h2>Scan/Spectrum data format (score_frag_dag)<a class="headerlink" href="#scan-spectrum-data-format-score-frag-dag" title="Permalink to this headline">¶</a></h2>
 <p>The input scans are usually stored in HDF5 using the following basic data layout. The data may be stored in an
 arbitrary group within the HDF5 and should contain the following groups and datasets:</p>
 <blockquote>
@@ -192,42 +228,6 @@ output results may be stored in an arbitray user-defined group which will contai
 <li>All arguments provided to <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.main" title="pactolus.score_frag_dag.main"><code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.main()</span></code></a> either via the command-line or as explicit keyword arguments</li>
 </ul>
 </div></blockquote>
-</div>
-<div class="section" id="tree-file-lookup-table-data-format-score-frag-dag">
-<h2>Tree file lookup table data format (score_frag_dag)<a class="headerlink" href="#tree-file-lookup-table-data-format-score-frag-dag" title="Permalink to this headline">¶</a></h2>
-<p>This is usually a binary numpy <a href="#id1"><span class="problematic" id="id2">``</span></a>.npy` file with a 1D array with the dtype defined in <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE" title="pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE"><code class="xref py py-mod docutils literal"><span class="pre">pactolus.score_frag_dag.FILE_LOOKUP_TABLE_DTYPE</span></code></a> defining for each molecular fragmentation tree: i) the path to the HDF5 tree file and ii) the primary mass of the corresponding molecule, which is used to search for trees with a matching precusor mz. The array may also be stored in an HDF5 file in a dataset with a corresponding compound dtype. The tree lookup file can be generated using the <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass" title="pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass"><code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.make_file_lookup_table_by_MS1_mass()</span></code></a> function. Existing tree-file lookup tables can be loaded from file via <a class="reference internal" href="score_frag_dag.html#pactolus.score_frag_dag.load_file_lookup_table" title="pactolus.score_frag_dag.load_file_lookup_table"><code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.load_file_lookup_table()</span></code></a> (which can also generate lookup tables from a textfile with a list of tree files or a directory with tree files).</p>
-</div>
-<div class="section" id="fragementation-tree-data-format-generate-frag-dag">
-<h2>Fragementation tree data format (generate_frag_dag)<a class="headerlink" href="#fragementation-tree-data-format-generate-frag-dag" title="Permalink to this headline">¶</a></h2>
-<p>Fragmentation trees are stored in HDF5 in a group where the group name is the inchi_key. Each tree-group
-contains the following datasets:</p>
-<blockquote>
-<div><ul>
-<li><p class="first"><code class="docutils literal"><span class="pre">FragTree_at_max_depth=#</span></code> is the fragmentation tree dataset. The fragmentation tree is stored as a  1D compound dataset listing all fragments sorted by their mass. The dataset contains the fragments for the molecule up to the indicated fragmentation depth, i.e., we break at most <code class="docutils literal"><span class="pre">max_depth</span></code> bonds to generate a fragment. Each fragment in the tree is unique in that it appears only once in the fragmentation tree and we store only the shortest bond breakage path that leads to the generation of the fragment. The compound data type stores the following information:</p>
-<blockquote>
-<div><ul class="simple">
-<li><code class="docutils literal"><span class="pre">atom_bool_arr</span></code> is a bool vector consisting of <code class="docutils literal"><span class="pre">#atoms</span></code> values describing which atoms of the fragmented molecule are part of the fragment.</li>
-<li><code class="docutils literal"><span class="pre">bond_bool_arr</span></code> is a bool vector consisting of <code class="docutils literal"><span class="pre">#bonds</span></code> values describing the shortest bond breakage path giving rise to the fragment, i.e., which fragments do we need to break to create the fragment.</li>
-<li><code class="docutils literal"><span class="pre">mass_vec</span></code> is a 64bit floating point number with the mass of the fragment</li>
-<li><code class="docutils literal"><span class="pre">parent_vec</span></code> is a 64bit integer indicating the index of parent fragment (using 0-based indexing) in the fragmention tree.</li>
-</ul>
-</div></blockquote>
-</li>
-<li><p class="first">In addition, the following information is stored as attributes on the group:</p>
-<blockquote>
-<div><ul class="simple">
-<li><code class="docutils literal"><span class="pre">inchi</span></code> : Inchi string for the molecule</li>
-<li><code class="docutils literal"><span class="pre">num_atoms</span></code> : Number of atoms in the molecule</li>
-<li><code class="docutils literal"><span class="pre">num_bonds</span></code> : Number of bonds in the molecule</li>
-<li><code class="docutils literal"><span class="pre">num_fragments</span></code> : Number of fragments stored in the tree</li>
-<li><code class="docutils literal"><span class="pre">max_depth</span></code> : The maximum fragmentation depth</li>
-<li><code class="docutils literal"><span class="pre">time_to_build</span></code> : The time in seconds used to build the tree.</li>
-</ul>
-</div></blockquote>
-</li>
-</ul>
-</div></blockquote>
-<p>While technically one could store an arbitrary number of trees in an HDF5 file, <code class="docutils literal"><span class="pre">score_frag_dag</span></code> currently assumes that a single tree be stored in each HDF5 file.</p>
 </div>
 </div>
 

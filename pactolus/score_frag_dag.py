@@ -596,7 +596,18 @@ def score_scan_list_against_trees_serial(scan_list,
 
 def make_pactolus_hit_table(pactolus_results, table_file, original_db, match_matrix=None):
     """
-    Makes a hit table in the same format as lbl-midas for comparison of the two algorithms
+    Makes a hit table in the same format as lbl-midas for comparison of the two algorithms..
+
+    A hit table is a structured numpy array that summarizes all scores for a single spectrum. Each entry
+    in the hit-table describes the `score`, `id`, `name`,  `mass`, `n_peaks`, `n_match` for a given
+    fragmentation tree (i.e., molecule) against the given spectrum (see also :py:data:`pactolus.score_frag_dag.HIT_TABLE_DTYPE` ).
+    The `n_peaks` and `n_match are only set if the match_matrix input is provided. This function uses
+    ``pactolus.score_frag_dag.crossref_to_db`` to cross-reference pactolus fragmentation trees
+    (typically identified via inchi-keys) against the molecular data base file to retrieve real molecule names.
+    An example molecular database file is available, e.g,
+    from `http://midas-omicsbio.ornl.gov/MetaCyc.mdb <http://midas-omicsbio.ornl.gov/MetaCyc.mdb>`_. The
+    main important parts in this case is the second column with the molecule name and the third column with
+    the inchi key.
 
     :param pactolus_results: ndarray,    n_compounds by n_scans matrix of pactolus scores
     :param table_file:      string,     full path to .npy file containing tree file names and parent masses that
