@@ -222,6 +222,7 @@ def calculate_MIDAS_score(mz_intensity_arr, tree, mass_tol, neutralizations, max
     :return:                    score, float, a MIDAS score
     :return:                    match_matrix, a bool matrix with n_peaks columns and n_nodes rows.
                                               elements are True if given peak matches given node of frag_dag
+                                              Returned only if want_match_matrix is True, othewise None is returned.
     """
 
     # attempt to truncate tree if max_depth is supplied
@@ -266,7 +267,7 @@ def calculate_MIDAS_score(mz_intensity_arr, tree, mass_tol, neutralizations, max
     if want_match_matrix:
         return score, match_matrix
     else:
-        return score
+        return score, None
 
 
 def make_file_lookup_table_by_MS1_mass(tree_files=None, path=None, save_result=None):
@@ -405,20 +406,14 @@ def score_peakcube_against_trees(peakcube,
             if intensities.max() == 0:
                 continue  # if all peaks are 0 intensity (e.g. masked data) skip scoring algo and keep score at 0
             mz_intensity_arr = np.array([mzs, intensities])
+            score_cube[i, idx], temp_matrix = calculate_MIDAS_score(mz_intensity_arr,
+                                                                    tree,
+                                                                    mass_tol=ms2_mass_tol,
+                                                                    neutralizations=neutralizations,
+                                                                    max_depth=max_depth,
+                                                                    want_match_matrix=want_match_matrix)
             if want_match_matrix:
-                score_cube[i, idx], match_matrix[i][idx] = calculate_MIDAS_score(mz_intensity_arr,
-                                                                                 tree,
-                                                                                 mass_tol=ms2_mass_tol,
-                                                                                 neutralizations=neutralizations,
-                                                                                 max_depth=max_depth,
-                                                                                 want_match_matrix=True)
-            else:
-                score_cube[i, idx] = calculate_MIDAS_score(mz_intensity_arr,
-                                                           tree,
-                                                           mass_tol=ms2_mass_tol,
-                                                           neutralizations=neutralizations,
-                                                           max_depth=max_depth,
-                                                           want_match_matrix=False)
+                match_matrix[i][idx] = temp_matrix
 
     # Compute the shape the score cube should have when we return it
     # Alternatively one could e.g. do tuple(list(spatial_dimensions) + [n_compounds,])
@@ -438,7 +433,7 @@ def score_scan_list_against_trees_serial(scan_list,
                                          ms2_mass_tol,
                                          max_depth,
                                          want_match_matrix=False,
-                                         scan_indexes=False,
+                                         scan_indexes=None,
                                          temp_out_group=None,
                                          mpi_root=None,
                                          mpi_comm=None):
@@ -467,7 +462,7 @@ def score_scan_list_against_trees_serial(scan_list,
                                 Default value is False.
 
     :param scan_indexes: Optional 1D array or list of integer indices for the scans. Used to identify scans
-        for logging. Default value is None.
+        for logging. Default value is None in which case range(n_scans) will be used as scan_indexes.
 
     :param temp_out_group: HDF5 group where the results from this run should temporarily be stored. If given, then
         the results for each scan will be written to a group 'scan_#' which in turn contains the following
@@ -531,7 +526,7 @@ def score_scan_list_against_trees_serial(scan_list,
             raise TypeError('Scans must be numpy arrays with a row for each peak, and *only* two columns')
 
         # figure files to score
-        file_idxs = []
+        file_idxs = np.asarray([], dtype='int')
         for ion_loss in neutralizations:
             ms1_mass = ms1_mz[i] + ion_loss
             mass_difference = np.abs(file_lookup_table['ms1_mass'] - ms1_mass)
@@ -546,21 +541,16 @@ def score_scan_list_against_trees_serial(scan_list,
             group_key = file_reader.keys()[0]
             data_key = file_reader[group_key].keys()[0]
             tree = file_reader[group_key][data_key][:]
+            score_matrix[i, idx], temp_matrix = calculate_MIDAS_score(scan,
+                                                                      tree,
+                                                                      mass_tol=ms2_mass_tol,
+                                                                      neutralizations=neutralizations,
+                                                                      max_depth=max_depth,
+                                                                      want_match_matrix=want_match_matrix)
             if want_match_matrix:
-                score_matrix[i, idx], match_matrix[i][idx] = calculate_MIDAS_score(scan,
-                                                                                   tree,
-                                                                                   mass_tol=ms2_mass_tol,
-                                                                                   neutralizations=neutralizations,
-                                                                                   max_depth=max_depth,
-                                                                                   want_match_matrix=True)
-            else:
-                score_matrix[i, idx] = calculate_MIDAS_score(scan,
-                                                             tree,
-                                                             mass_tol=ms2_mass_tol,
-                                                             neutralizations=neutralizations,
-                                                             max_depth=max_depth,
-                                                             want_match_matrix=False)
-        number_of_hits = (score_matrix[i, idx] > 0).sum()
+                match_matrix[i][idx] = temp_matrix
+
+        number_of_hits = (score_matrix[i, :] > 0).sum()
 
         end_time = time.time()
         execution_time = end_time - start_time
@@ -574,7 +564,7 @@ def score_scan_list_against_trees_serial(scan_list,
         # Save the score_matrix and match_matrix data if requested
         if temp_out_group is not None:
             score_data_group = temp_out_group.require_group('scan_'+str(scan_indexes[i]))
-            score_data_group['score_matrix'] = score_matrix
+            score_data_group['score_matrix'] = score_matrix[i, :]
             if want_match_matrix:
                 for compound_index in range(n_compounds):
                     if match_matrix[i][compound_index] is not None:
@@ -804,7 +794,7 @@ def load_scan_data_hdf5(filepath,
     input_file.close()
 
     # Return the data
-    return scan_list, ms1_mz, scan_metadata, experiment_metadata
+    return scan_list, scan_metadata, experiment_metadata
 
 
 def load_file_lookup_table(path):
@@ -1041,20 +1031,22 @@ def parse_command_line_args():
                                          action="store",
                                          default="INFO",
                                          required=False,
-                                         choices=log_helper.log_levels.keys())
-    optional_argument_group.add_argument("--tempath",
+                                         choices=log_helper.log_levels.keys(),
+                                         dest='loglevel')
+    optional_argument_group.add_argument("--temppath",
                                          help="Path basename where temporary data files should be stored. " +
                                               "Temporary files are created one-per-core to incrementally " +
-                                              "save the results of an analysis. If not given, then a temp-dir" +
-                                              "will be created automatically.",
+                                              "save the results of an analysis. If not given, then a tempfiles" +
+                                              "will be created automatically if needed (i.e., if --save is set)." +
+                                              "Temporary files will removed after completion if --save is set.",
                                          type=dtypes['str'],
                                          action="store",
                                          default="",
                                          required=False,
-                                         choices=log_helper.log_levels.keys())
+                                         dest='temppath')
 
     # Parse the command line arguments
-    command_line_args = vars(parser.parse_known_args()[0])
+    command_line_args =  vars(parser.parse_args())  # vars(parser.parse_known_args()[0])
 
     # Add the filepath and grouppath values based on the the --input argument value
     input_path = command_line_args['input'].split(':')
@@ -1100,7 +1092,6 @@ def score_scan_list_against_trees(scan_list,
                                   max_depth,
                                   want_match_matrix=False,
                                   temp_out_group=None,
-                                  collect=False,
                                   schedule=mpi_helper.parallel_over_axes.SCHEDULES['DYNAMIC'],
                                   mpi_comm=None,
                                   mpi_root=0):
@@ -1131,7 +1122,8 @@ def score_scan_list_against_trees(scan_list,
                 ms2_mass_tol=ms2_mass_tol,
                 max_depth=max_depth,
                 want_match_matrix=want_match_matrix,
-                temp_out_group=temp_out_group)
+                temp_out_group=temp_out_group,
+                scan_indexes=None)
     else:
         result = score_scan_list_against_trees_parallel(
                 scan_list=scan_list,
@@ -1371,7 +1363,7 @@ def collect_score_scan_list_results(temp_filename_lists,
                 match_matrix = scan_group[match_matrix_name][:]
                 num_matched[scan_index, compound_index] = match_matrix.sum()
                 output_group[match_matrix_name] = match_matrix
-                num_matched = scan_group[match_matrix_name][:].sum()
+                num_matched[scan_index, compound_index] = scan_group[match_matrix_name][:].sum()
 
     # Save the number of matched peaks array if anything is available
     if num_matched.sum() > 0:
@@ -1393,10 +1385,12 @@ def collect_score_scan_list_results(temp_filename_lists,
                                                compression_opts=2)
     for i in range(num_scans):
         scores = score_dataset[i,:]
-        nonzero_scores = np.where(scores > 0)[0]
+        nonzero_scores_boolarr = scores > 0
+        nonzero_scores = np.where(nonzero_scores_boolarr)[0]
         num_nonzero = nonzero_scores.size
-        ranking = scores.argsort()[::-1][:num_nonzero]
-        rank_dataset[nonzero_scores] = ranking
+        if num_nonzero > 0:
+            ranking = scores.argsort()[::-1][:num_nonzero]
+            rank_dataset[i, nonzero_scores] = ranking
 
     # Write the compound metadata
     compound_metadata_group = output_group.require_group('compound_metadata')
@@ -1424,11 +1418,12 @@ def collect_score_scan_list_results(temp_filename_lists,
             output_file.flush()
 
     # Write the file look-up table if necessary
-    if file_lookup_table:
+    if file_lookup_table is not None:
         output_group['tree_file_lookup_table'] = file_lookup_table
 
     # Write the scan_list data if necessary
-    if scan_list is not None:
+    if scan_list is not None and save_scan_list:
+        # Compile and save the scan/spectrum data
         scan_group = output_group.require_group('scans')
         scan_group['peak_mz'] = np.concatenate(tuple([ri[0] for ri in scan_list]), axis=-1)
         scan_group['peak_value'] = np.concatenate(tuple([ri[1] for ri in scan_list]), axis=-1)
@@ -1592,11 +1587,13 @@ def main(use_command_line=True, **kwargs):
         if os.path.isdir(temppath):
             temp_out_file = h5py.File(os.path.join(temppath, 'pactolus_rankfile_' + str(mpi_helper.get_rank()) + ".h5"))
             temp_out_group = temp_out_file['/']
+        cleanup_temporary_files = output_filepath is not None
     elif output_filepath is not None:
         # Create a NamedTempory file that will be deleted automaticaly at the end of the run
         local_tempfile = NamedTemporaryFile()
         temp_out_file = h5py.File(local_tempfile.name)
         temp_out_group = temp_out_file['/']
+        cleanup_temporary_files = False
 
     # Score the scans
     log_helper.debug(__name__, "Starting the scoring process", comm=mpi_comm, root=mpi_root)
@@ -1607,7 +1604,6 @@ def main(use_command_line=True, **kwargs):
                                             ms2_mass_tol=ms2_mass_tol,
                                             ms1_mass_tol=ms1_mass_tol,
                                             max_depth=max_depth,
-                                            metabolite_database=metabolite_database,
                                             temp_out_group=temp_out_group,
                                             want_match_matrix=match_matrix,
                                             schedule=schedule,
@@ -1634,11 +1630,10 @@ def main(use_command_line=True, **kwargs):
                              root=mpi_root, comm=mpi_comm)
 
     # Compile the results from all output files to the output file if requested
-    cleanup_temporary_files = False
     if output_filepath is not None:
         log_helper.debug(__name__, 'Collecting results from the temporary files', comm=mpi_comm, root=mpi_root)
         # Collect the list of temporary files we need to read
-        all_tempfile_names = mpi_helper.gather(temp_out_group.file.name, comm=mpi_comm, root=mpi_root)
+        all_tempfile_names = mpi_helper.gather(temp_out_group.file.filename, comm=mpi_comm, root=mpi_root)
         # Compile the scan data if we should pass it through as well
         #scan_data = {}
         #if pass_sepctra:
@@ -1662,16 +1657,17 @@ def main(use_command_line=True, **kwargs):
                                         file_lookup_table=file_lookup_table,
                                         mpi_comm=mpi_comm,
                                         mpi_root=mpi_root)
-        cleanup_temporary_files = True
 
     # Close the output file for the current core. We do this after the consolidation of the ouptut data
     # to avoid that Python might clean up the NamedTemporaryFile when we close it.
     if temp_out_group is not None:
-        tempfile_name = temp_out_group.file.name()
+        tempfile_name = temp_out_group.file.filename
         temp_out_group.file.close()
-        if cleanup_temporary_files:
+        if cleanup_temporary_files and os.path.exists(tempfile_name):
             os.remove(tempfile_name)
 
+    # TODO Save execution settings and statistics
+    # TODO Check why match matrices are not None in score_scan_list_against_trees_serial even for scores that are not calculated
 
 if __name__ == "__main__":
     main(use_command_line=True)
