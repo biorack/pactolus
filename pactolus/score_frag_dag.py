@@ -447,28 +447,34 @@ def score_scan_list_against_trees_serial(scan_list,
                                          mpi_root=None,
                                          mpi_comm=None):
     """
-    Create a score cube of MIDAS scores for each
+    Create in serial a score cube of MIDAS scores for a series of spectra/scans.
 
-    :param scan_list:         list of numpy ndarrays    Stores peak mzs and intensities.  Each list el has shape of
-                                                        (n_peaks, 2), with mzs in column 1 an intensities in col 2.
-                                                        Length of list is n_scans long
-    :param ms1_mz:            numpy array of floats            The (unneutralized) MS1 mz/s of the precursor ions.
-                                                        Must have same length as scan_list, i.e. len(ms1_ms) = num_scans
+    :param scan_list: Stores peak mzs and intensities. Each list element is a numpy array with a shape of
+                      n_peaks, 2), with mzs in column 1 an intensities in col 2. The list is n_scans long/
+    :type scan_list: list of numpy ndarrays
 
-    :param file_lookup_table: full path to a .npy file having a numpy structured array with columns
-                              (i) filename and (ii) MS1 mass. Alternatively, this may also be the numpy array directly.
+    :param ms1_mz: The (unneutralized) MS1 mz/s of the precursor ions.
+    :type ms1_mz: numpy array of floats. Must have same length as scan_list, i.e. len(ms1_ms) = num_scans
 
-    :param ms1_mass_tol: float, max. diff. in Da of tree_parent_mass & MS1_precursor_mass
+    :param file_lookup_table: The lookup table for the tree files
+    :type file_lookup_table: full path to a .npy file having a numpy structured array with columns
+            (i) filename and (ii) MS1 mass. Alternatively, this may also be the numpy array directly.
 
-    :param ms2_mass_tol: float, max. mass in Da by which two MS2/MSn peaks can differ
+    :param ms1_mass_tol: Maximum mass difference in Da of tree_parent_mass & MS1_precursor_mass
+    :type ms2_mass_tol: float
 
-    :param neutralizations:   list of floats, adjustments (in Da) added to data peaks in order to neutralize them
+    :param ms2_mass_tol: Maximum mass difference in Da by which two MS2/MSn peaks can differ
+    :type ms2_mass_tol: float
 
-    :param max_depth:         int, optional.  For restricting scoring to lower max depths than
+    :param neutralizations: adjustments (in Da) added to data peaks in order to neutralize them
+    :type neutralizations: list of floats or 1D numpy array of floats
+
+    :param max_depth:  Optional parameter  For restricting scoring to lower max depths than
                               are present in the supplied tree
+    :type max_depth: int
 
-    :param want_match_matrix:   bool, if True then tuple of (score, match_matrix) is returned, else return score only.
-                                Default value is False.
+    :param want_match_matrix: If True then the dict of match matrices is returned as second output. (Default=False)
+    :type want_match_matrix: bool
 
     :param scan_indexes: Optional 1D array or list of integer indices for the scans. Used to identify scans
         for logging. Default value is None in which case range(n_scans) will be used as scan_indexes.
@@ -567,7 +573,7 @@ def score_scan_list_against_trees_serial(scan_list,
         time_str = "rank : " + str(mpi_helper.get_rank()) + " : index : " + \
                    str(scan_indexes[i]) + " : time in s : " + str(execution_time)
         time_str += " : num hits : " + str(number_of_hits)
-        log_helper.info(__name__, time_str, comm=mpi_comm, root=None)
+        log_helper.info(__name__, time_str, comm=mpi_comm, root=None)  # Set root=None to report from all ranks
         sys.stdout.flush()
         sys.stderr.flush()
 
@@ -1156,21 +1162,70 @@ def score_scan_list_against_trees(scan_list,
                                   mpi_comm=None,
                                   mpi_root=0):
     """
-    TODO Add documentation
+    Create a score cube of MIDAS scores for a series of spectra/scans using either
+    ``score_scan_list_against_trees_serial(..)`` or score_scan_list_against_trees_parallel(..)``
+    depending on whether we have multiple MPI cores available for processing or not. NOTE:
+    similar to score_scan_list_against_trees_parallel(..),  only the results
+    that were computed on the current core are returned on any given core. If we need the
+    results from all cores, then we need to collect them afterwards.
 
-    :param scan_list:
-    :param ms1_mz:
-    :param file_lookup_table:
-    :param neutralizations:
-    :param ms1_mass_tol:
-    :param ms2_mass_tol:
-    :param max_depth:
-    :param want_match_matrix:
-    :param temp_out_group:
-    :param schedule:
-    :param mpi_comm:
-    :param mpi_root:
-    :return:
+    param scan_list: Stores peak mzs and intensities. Each list element is a numpy array with a shape of
+                      n_peaks, 2), with mzs in column 1 an intensities in col 2. The list is n_scans long/
+    :type scan_list: list of numpy ndarrays
+
+    :param ms1_mz: The (unneutralized) MS1 mz/s of the precursor ions.
+    :type ms1_mz: numpy array of floats. Must have same length as scan_list, i.e. len(ms1_ms) = num_scans
+
+    :param file_lookup_table: The lookup table for the tree files
+    :type file_lookup_table: full path to a .npy file having a numpy structured array with columns
+            (i) filename and (ii) MS1 mass. Alternatively, this may also be the numpy array directly.
+
+    :param ms1_mass_tol: Maximum mass difference in Da of tree_parent_mass & MS1_precursor_mass
+    :type ms2_mass_tol: float
+
+    :param ms2_mass_tol: Maximum mass difference in Da by which two MS2/MSn peaks can differ
+    :type ms2_mass_tol: float
+
+    :param neutralizations: adjustments (in Da) added to data peaks in order to neutralize them
+    :type neutralizations: list of floats or 1D numpy array of floats
+
+    :param max_depth:  Optional parameter  For restricting scoring to lower max depths than
+                              are present in the supplied tree
+    :type max_depth: int
+
+    :param want_match_matrix: If True then the dict of match matrices is returned as second output. (Default=False)
+    :type want_match_matrix: bool
+
+    :param scan_indexes: Optional 1D array or list of integer indices for the scans. Used to identify scans
+        for logging. Default value is None in which case range(n_scans) will be used as scan_indexes.
+
+    :param temp_out_group: HDF5 group where the results from this run should temporarily be stored. If given, then
+        the results for each scan will be written to a group 'scan_#' which in turn contains the following
+        datasets
+
+         * `score_matrix` : The 2D score matrix
+         * `match_matrix_#s_#c` where #s is the scan index and #c is the compound index. This dataset contains \
+            the match matrix for the corresponding scan / compound combindation
+
+    :param schedule: The parallel scheduling scheme to be used. Default is the recommended DYNAMIC scheduling. See
+            pactolus.third_party.mpi_helper.parallel_over_axes.SCHEDULES for alternative options.
+
+    :param mpi_root: The root MPI task. Only needed for consistent logging when running in parallel. Set to NONE
+        to do logging from all cores.
+
+    :param mpi_comm: The mpi communicator to be used. Only needed for consistent logging when running in parallel.
+
+    :return: score_matrix     a numpy ndarray of shape (n_scans, len(file_lookup_table))
+    :return: match_matrix     Optional output that is only returned if want_match_matrix is set to True.
+                              Dictionary of  match matrices (one matrix per non-zero score for a given scan and
+                              compound combination). The keys are tuples of integers describing the index of
+                              scan and compound in the returned score_matrix.
+                              Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
+                              if given peak matches given node of frag_dag. The return value will be None if
+                              want_match_matrix is set to False (Default)
+    :return: scan_index   Numpy array of integer indices indicating the subset of scans for which processing was
+                              performed by the given core (and or collected to the core in case of the root rank
+                              with collect set to True).
     """
     if not mpi_helper.MPI_AVAILABLE or mpi_helper.get_size() == 1:
         result = score_scan_list_against_trees_serial(
@@ -1184,6 +1239,8 @@ def score_scan_list_against_trees(scan_list,
                 want_match_matrix=want_match_matrix,
                 temp_out_group=temp_out_group,
                 scan_indexes=None)
+
+        result = (result[0], result[1], range(len(scan_list))) # Make sure we return the scan_index also in serial
     else:
         result = score_scan_list_against_trees_parallel(
                 scan_list=scan_list,
@@ -1216,30 +1273,64 @@ def score_scan_list_against_trees_parallel(scan_list,
                                            mpi_comm=None,
                                            mpi_root=0):
     """
-    TODO Add documentation
+    Create in parallel a score cube of MIDAS scores for a series of spectra/scans. Note, only the results
+    that were computed on the current core are returned on any given core.
 
-    :param scan_indexes:
-    :param scan_list:
-    :param ms1_mz:
-    :param file_lookup_table:
-    :param neutralizations:
-    :param ms2_mass_tol:
-    :param ms1_mass_tol:
-    :param max_depth:
-    :param metabolite_database:
-    :param temp_out_group:
-    :param want_match_matrix:
-    :param schedule:  (None means serial)
-    :param mpi_comm:
-    :param mpi_root:
+    :param scan_list: Stores peak mzs and intensities. Each list element is a numpy array with a shape of
+                      n_peaks, 2), with mzs in column 1 an intensities in col 2. The list is n_scans long/
+    :type scan_list: list of numpy ndarrays
+
+    :param ms1_mz: The (unneutralized) MS1 mz/s of the precursor ions.
+    :type ms1_mz: numpy array of floats. Must have same length as scan_list, i.e. len(ms1_ms) = num_scans
+
+    :param file_lookup_table: The lookup table for the tree files
+    :type file_lookup_table: full path to a .npy file having a numpy structured array with columns
+            (i) filename and (ii) MS1 mass. Alternatively, this may also be the numpy array directly.
+
+    :param ms1_mass_tol: Maximum mass difference in Da of tree_parent_mass & MS1_precursor_mass
+    :type ms2_mass_tol: float
+
+    :param ms2_mass_tol: Maximum mass difference in Da by which two MS2/MSn peaks can differ
+    :type ms2_mass_tol: float
+
+    :param neutralizations: adjustments (in Da) added to data peaks in order to neutralize them
+    :type neutralizations: list of floats or 1D numpy array of floats
+
+    :param max_depth:  Optional parameter  For restricting scoring to lower max depths than
+                              are present in the supplied tree
+    :type max_depth: int
+
+    :param want_match_matrix: If True then the dict of match matrices is returned as second output. (Default=False)
+    :type want_match_matrix: bool
+
+    :param scan_indexes: Optional 1D array or list of integer indices for the scans. Used to identify scans
+        for logging. Default value is None in which case range(n_scans) will be used as scan_indexes.
+
+    :param temp_out_group: HDF5 group where the results from this run should temporarily be stored. If given, then
+        the results for each scan will be written to a group 'scan_#' which in turn contains the following
+        datasets
+
+         * `score_matrix` : The 2D score matrix
+         * `match_matrix_#s_#c` where #s is the scan index and #c is the compound index. This dataset contains \
+            the match matrix for the corresponding scan / compound combindation
+
+    :param schedule: The parallel scheduling scheme to be used. Default is the recommended DYNAMIC scheduling. See
+            pactolus.third_party.mpi_helper.parallel_over_axes.SCHEDULES for alternative options.
+
+    :param mpi_root: The root MPI task. Only needed for consistent logging when running in parallel. Set to NONE
+        to do logging from all cores.
+
+    :param mpi_comm: The mpi communicator to be used. Only needed for consistent logging when running in parallel.
 
     :return: score_matrix     a numpy ndarray of shape (n_scans, len(file_lookup_table))
     :return: match_matrix     Optional output that is only returned if want_match_matrix is set to True.
-                              List of lists of match matrices (one matrix per scan). Each entry is a bool matrix
-                              with n_peaks columns and n_nodes rows. Elements are True if given peak matches given
-                              node of frag_dag. An entry will be None in case that the hit-score was 0. The return
-                              value will be None if want_match_matrix is set to False (Default)
-    :return: scan_index   Numpy array of integer indices indicating the subset of scans for procesing was
+                              Dictionary of  match matrices (one matrix per non-zero score for a given scan and
+                              compound combination). The keys are tuples of integers describing the index of
+                              scan and compound in the returned score_matrix.
+                              Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
+                              if given peak matches given node of frag_dag. The return value will be None if
+                              want_match_matrix is set to False (Default)
+    :return: scan_index   Numpy array of integer indices indicating the subset of scans for which processing was
                               performed by the given core (and or collected to the core in case of the root rank
                               with collect set to True).
 
@@ -1708,6 +1799,8 @@ def score_main(use_command_line=True, **kwargs):
         * `clean_output` : Boolean indicating whether we should automatically delete conflicting data in the \
                 output target defined by --save.
 
+    :return: The function returns the output of ``score_scan_list_against_trees(..)``. See
+             score_scan_list_against_trees(...) for details
 
     """
     global METACYC_DTYPE
@@ -1893,6 +1986,8 @@ def score_main(use_command_line=True, **kwargs):
         temp_out_group.file.close()
         if cleanup_temporary_files and os.path.exists(tempfile_name):
             os.remove(tempfile_name)
+
+    return results
 
 
 if __name__ == "__main__":

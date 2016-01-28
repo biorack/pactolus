@@ -581,7 +581,7 @@ Designed to be used non-neutralized data.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>use_command_line</strong> &#8211; Retrieve analysis settings from the command line</li>
 <li><strong>kwargs</strong> &#8211; <p>Optional keyword arguments used to define all (or overwrite some) settings usually defined
 via the command line. Optional keywqord arguments are:</p>
@@ -616,6 +616,10 @@ via the command line. Optional keywqord arguments are:</p>
 </ul>
 </li>
 </ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The function returns the output of <code class="docutils literal"><span class="pre">score_scan_list_against_trees(..)</span></code>. See
+score_scan_list_against_trees(...) for details</p>
 </td>
 </tr>
 </tbody>
@@ -675,28 +679,65 @@ appropriate for imaging data where:</p>
 <dl class="function">
 <dt id="pactolus.score_frag_dag.score_scan_list_against_trees">
 <code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">score_scan_list_against_trees</code><span class="sig-paren">(</span><em>scan_list</em>, <em>ms1_mz</em>, <em>file_lookup_table</em>, <em>neutralizations</em>, <em>ms1_mass_tol</em>, <em>ms2_mass_tol</em>, <em>max_depth</em>, <em>want_match_matrix=False</em>, <em>temp_out_group=None</em>, <em>schedule='DYNAMIC'</em>, <em>mpi_comm=None</em>, <em>mpi_root=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#score_scan_list_against_trees"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.score_scan_list_against_trees" title="Permalink to this definition">¶</a></dt>
-<dd><p>TODO Add documentation</p>
+<dd><p>Create a score cube of MIDAS scores for a series of spectra/scans using either
+<code class="docutils literal"><span class="pre">score_scan_list_against_trees_serial(..)</span></code> or score_scan_list_against_trees_parallel(..)``
+depending on whether we have multiple MPI cores available for processing or not. NOTE:
+similar to score_scan_list_against_trees_parallel(..),  only the results
+that were computed on the current core are returned on any given core. If we need the
+results from all cores, then we need to collect them afterwards.</p>
+<dl class="docutils">
+<dt>param scan_list: Stores peak mzs and intensities. Each list element is a numpy array with a shape of</dt>
+<dd>n_peaks, 2), with mzs in column 1 an intensities in col 2. The list is n_scans long/</dd>
+</dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>scan_list</strong> &#8211; </li>
-<li><strong>ms1_mz</strong> &#8211; </li>
-<li><strong>file_lookup_table</strong> &#8211; </li>
-<li><strong>neutralizations</strong> &#8211; </li>
-<li><strong>ms1_mass_tol</strong> &#8211; </li>
-<li><strong>ms2_mass_tol</strong> &#8211; </li>
-<li><strong>max_depth</strong> &#8211; </li>
-<li><strong>want_match_matrix</strong> &#8211; </li>
-<li><strong>temp_out_group</strong> &#8211; </li>
-<li><strong>schedule</strong> &#8211; </li>
-<li><strong>mpi_comm</strong> &#8211; </li>
-<li><strong>mpi_root</strong> &#8211; </li>
+<li><strong>ms1_mz</strong> (<em>numpy array of floats. Must have same length as scan_list, i.e. len(ms1_ms) = num_scans</em>) &#8211; The (unneutralized) MS1 mz/s of the precursor ions.</li>
+<li><strong>file_lookup_table</strong> (<em>full path to a .npy file having a numpy structured array with columns
+(i) filename and (ii) MS1 mass. Alternatively, this may also be the numpy array directly.</em>) &#8211; The lookup table for the tree files</li>
+<li><strong>ms1_mass_tol</strong> &#8211; Maximum mass difference in Da of tree_parent_mass &amp; MS1_precursor_mass</li>
+<li><strong>ms2_mass_tol</strong> (<em>float</em>) &#8211; Maximum mass difference in Da by which two MS2/MSn peaks can differ</li>
+<li><strong>neutralizations</strong> (<em>list of floats or 1D numpy array of floats</em>) &#8211; adjustments (in Da) added to data peaks in order to neutralize them</li>
+<li><strong>max_depth</strong> (<em>int</em>) &#8211; Optional parameter  For restricting scoring to lower max depths than
+are present in the supplied tree</li>
+<li><strong>want_match_matrix</strong> (<em>bool</em>) &#8211; If True then the dict of match matrices is returned as second output. (Default=False)</li>
+<li><strong>scan_indexes</strong> &#8211; Optional 1D array or list of integer indices for the scans. Used to identify scans
+for logging. Default value is None in which case range(n_scans) will be used as scan_indexes.</li>
+<li><strong>temp_out_group</strong> &#8211; <p>HDF5 group where the results from this run should temporarily be stored. If given, then
+the results for each scan will be written to a group &#8216;scan_#&#8217; which in turn contains the following
+datasets</p>
+<blockquote>
+<div><ul>
+<li><cite>score_matrix</cite> : The 2D score matrix</li>
+<li><cite>match_matrix_#s_#c</cite> where #s is the scan index and #c is the compound index. This dataset contains             the match matrix for the corresponding scan / compound combindation</li>
+</ul>
+</div></blockquote>
+</li>
+<li><strong>schedule</strong> &#8211; The parallel scheduling scheme to be used. Default is the recommended DYNAMIC scheduling. See
+pactolus.third_party.mpi_helper.parallel_over_axes.SCHEDULES for alternative options.</li>
+<li><strong>mpi_root</strong> &#8211; The root MPI task. Only needed for consistent logging when running in parallel. Set to NONE
+to do logging from all cores.</li>
+<li><strong>mpi_comm</strong> &#8211; The mpi communicator to be used. Only needed for consistent logging when running in parallel.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">score_matrix     a numpy ndarray of shape (n_scans, len(file_lookup_table))</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">match_matrix     Optional output that is only returned if want_match_matrix is set to True.
+Dictionary of  match matrices (one matrix per non-zero score for a given scan and
+compound combination). The keys are tuples of integers describing the index of
+scan and compound in the returned score_matrix.
+Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
+if given peak matches given node of frag_dag. The return value will be None if
+want_match_matrix is set to False (Default)</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">scan_index   Numpy array of integer indices indicating the subset of scans for which processing was
+performed by the given core (and or collected to the core in case of the root rank
+with collect set to True).</p>
 </td>
 </tr>
 </tbody>
@@ -706,26 +747,41 @@ appropriate for imaging data where:</p>
 <dl class="function">
 <dt id="pactolus.score_frag_dag.score_scan_list_against_trees_parallel">
 <code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">score_scan_list_against_trees_parallel</code><span class="sig-paren">(</span><em>scan_list</em>, <em>ms1_mz</em>, <em>file_lookup_table</em>, <em>neutralizations</em>, <em>ms1_mass_tol</em>, <em>ms2_mass_tol</em>, <em>max_depth</em>, <em>want_match_matrix=False</em>, <em>temp_out_group=None</em>, <em>scan_indexes=False</em>, <em>schedule='DYNAMIC'</em>, <em>mpi_comm=None</em>, <em>mpi_root=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#score_scan_list_against_trees_parallel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.score_scan_list_against_trees_parallel" title="Permalink to this definition">¶</a></dt>
-<dd><p>TODO Add documentation</p>
+<dd><p>Create in parallel a score cube of MIDAS scores for a series of spectra/scans. Note, only the results
+that were computed on the current core are returned on any given core.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>scan_indexes</strong> &#8211; </li>
-<li><strong>scan_list</strong> &#8211; </li>
-<li><strong>ms1_mz</strong> &#8211; </li>
-<li><strong>file_lookup_table</strong> &#8211; </li>
-<li><strong>neutralizations</strong> &#8211; </li>
-<li><strong>ms2_mass_tol</strong> &#8211; </li>
-<li><strong>ms1_mass_tol</strong> &#8211; </li>
-<li><strong>max_depth</strong> &#8211; </li>
-<li><strong>metabolite_database</strong> &#8211; </li>
-<li><strong>temp_out_group</strong> &#8211; </li>
-<li><strong>want_match_matrix</strong> &#8211; </li>
-<li><strong>schedule</strong> &#8211; (None means serial)</li>
-<li><strong>mpi_comm</strong> &#8211; </li>
-<li><strong>mpi_root</strong> &#8211; </li>
+<li><strong>scan_list</strong> (<em>list of numpy ndarrays</em>) &#8211; Stores peak mzs and intensities. Each list element is a numpy array with a shape of
+n_peaks, 2), with mzs in column 1 an intensities in col 2. The list is n_scans long/</li>
+<li><strong>ms1_mz</strong> (<em>numpy array of floats. Must have same length as scan_list, i.e. len(ms1_ms) = num_scans</em>) &#8211; The (unneutralized) MS1 mz/s of the precursor ions.</li>
+<li><strong>file_lookup_table</strong> (<em>full path to a .npy file having a numpy structured array with columns
+(i) filename and (ii) MS1 mass. Alternatively, this may also be the numpy array directly.</em>) &#8211; The lookup table for the tree files</li>
+<li><strong>ms1_mass_tol</strong> &#8211; Maximum mass difference in Da of tree_parent_mass &amp; MS1_precursor_mass</li>
+<li><strong>ms2_mass_tol</strong> (<em>float</em>) &#8211; Maximum mass difference in Da by which two MS2/MSn peaks can differ</li>
+<li><strong>neutralizations</strong> (<em>list of floats or 1D numpy array of floats</em>) &#8211; adjustments (in Da) added to data peaks in order to neutralize them</li>
+<li><strong>max_depth</strong> (<em>int</em>) &#8211; Optional parameter  For restricting scoring to lower max depths than
+are present in the supplied tree</li>
+<li><strong>want_match_matrix</strong> (<em>bool</em>) &#8211; If True then the dict of match matrices is returned as second output. (Default=False)</li>
+<li><strong>scan_indexes</strong> &#8211; Optional 1D array or list of integer indices for the scans. Used to identify scans
+for logging. Default value is None in which case range(n_scans) will be used as scan_indexes.</li>
+<li><strong>temp_out_group</strong> &#8211; <p>HDF5 group where the results from this run should temporarily be stored. If given, then
+the results for each scan will be written to a group &#8216;scan_#&#8217; which in turn contains the following
+datasets</p>
+<blockquote>
+<div><ul>
+<li><cite>score_matrix</cite> : The 2D score matrix</li>
+<li><cite>match_matrix_#s_#c</cite> where #s is the scan index and #c is the compound index. This dataset contains             the match matrix for the corresponding scan / compound combindation</li>
+</ul>
+</div></blockquote>
+</li>
+<li><strong>schedule</strong> &#8211; The parallel scheduling scheme to be used. Default is the recommended DYNAMIC scheduling. See
+pactolus.third_party.mpi_helper.parallel_over_axes.SCHEDULES for alternative options.</li>
+<li><strong>mpi_root</strong> &#8211; The root MPI task. Only needed for consistent logging when running in parallel. Set to NONE
+to do logging from all cores.</li>
+<li><strong>mpi_comm</strong> &#8211; The mpi communicator to be used. Only needed for consistent logging when running in parallel.</li>
 </ul>
 </td>
 </tr>
@@ -733,13 +789,15 @@ appropriate for imaging data where:</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">match_matrix     Optional output that is only returned if want_match_matrix is set to True.
-List of lists of match matrices (one matrix per scan). Each entry is a bool matrix
-with n_peaks columns and n_nodes rows. Elements are True if given peak matches given
-node of frag_dag. An entry will be None in case that the hit-score was 0. The return
-value will be None if want_match_matrix is set to False (Default)</p>
+Dictionary of  match matrices (one matrix per non-zero score for a given scan and
+compound combination). The keys are tuples of integers describing the index of
+scan and compound in the returned score_matrix.
+Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True
+if given peak matches given node of frag_dag. The return value will be None if
+want_match_matrix is set to False (Default)</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">scan_index   Numpy array of integer indices indicating the subset of scans for procesing was
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">scan_index   Numpy array of integer indices indicating the subset of scans for which processing was
 performed by the given core (and or collected to the core in case of the root rank
 with collect set to True).</p>
 </td>
@@ -751,26 +809,23 @@ with collect set to True).</p>
 <dl class="function">
 <dt id="pactolus.score_frag_dag.score_scan_list_against_trees_serial">
 <code class="descclassname">pactolus.score_frag_dag.</code><code class="descname">score_scan_list_against_trees_serial</code><span class="sig-paren">(</span><em>scan_list</em>, <em>ms1_mz</em>, <em>file_lookup_table</em>, <em>neutralizations</em>, <em>ms1_mass_tol</em>, <em>ms2_mass_tol</em>, <em>max_depth</em>, <em>want_match_matrix=False</em>, <em>scan_indexes=None</em>, <em>temp_out_group=None</em>, <em>mpi_root=None</em>, <em>mpi_comm=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pactolus/score_frag_dag.html#score_scan_list_against_trees_serial"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pactolus.score_frag_dag.score_scan_list_against_trees_serial" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a score cube of MIDAS scores for each</p>
+<dd><p>Create in serial a score cube of MIDAS scores for a series of spectra/scans.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>scan_list</strong> &#8211; list of numpy ndarrays    Stores peak mzs and intensities.  Each list el has shape of
-(n_peaks, 2), with mzs in column 1 an intensities in col 2.
-Length of list is n_scans long</li>
-<li><strong>ms1_mz</strong> &#8211; numpy array of floats            The (unneutralized) MS1 mz/s of the precursor ions.
-Must have same length as scan_list, i.e. len(ms1_ms) = num_scans</li>
-<li><strong>file_lookup_table</strong> &#8211; full path to a .npy file having a numpy structured array with columns
-(i) filename and (ii) MS1 mass. Alternatively, this may also be the numpy array directly.</li>
-<li><strong>ms1_mass_tol</strong> &#8211; float, max. diff. in Da of tree_parent_mass &amp; MS1_precursor_mass</li>
-<li><strong>ms2_mass_tol</strong> &#8211; float, max. mass in Da by which two MS2/MSn peaks can differ</li>
-<li><strong>neutralizations</strong> &#8211; list of floats, adjustments (in Da) added to data peaks in order to neutralize them</li>
-<li><strong>max_depth</strong> &#8211; int, optional.  For restricting scoring to lower max depths than
+<li><strong>scan_list</strong> (<em>list of numpy ndarrays</em>) &#8211; Stores peak mzs and intensities. Each list element is a numpy array with a shape of
+n_peaks, 2), with mzs in column 1 an intensities in col 2. The list is n_scans long/</li>
+<li><strong>ms1_mz</strong> (<em>numpy array of floats. Must have same length as scan_list, i.e. len(ms1_ms) = num_scans</em>) &#8211; The (unneutralized) MS1 mz/s of the precursor ions.</li>
+<li><strong>file_lookup_table</strong> (<em>full path to a .npy file having a numpy structured array with columns
+(i) filename and (ii) MS1 mass. Alternatively, this may also be the numpy array directly.</em>) &#8211; The lookup table for the tree files</li>
+<li><strong>ms1_mass_tol</strong> &#8211; Maximum mass difference in Da of tree_parent_mass &amp; MS1_precursor_mass</li>
+<li><strong>ms2_mass_tol</strong> (<em>float</em>) &#8211; Maximum mass difference in Da by which two MS2/MSn peaks can differ</li>
+<li><strong>neutralizations</strong> (<em>list of floats or 1D numpy array of floats</em>) &#8211; adjustments (in Da) added to data peaks in order to neutralize them</li>
+<li><strong>max_depth</strong> (<em>int</em>) &#8211; Optional parameter  For restricting scoring to lower max depths than
 are present in the supplied tree</li>
-<li><strong>want_match_matrix</strong> &#8211; bool, if True then tuple of (score, match_matrix) is returned, else return score only.
-Default value is False.</li>
+<li><strong>want_match_matrix</strong> (<em>bool</em>) &#8211; If True then the dict of match matrices is returned as second output. (Default=False)</li>
 <li><strong>scan_indexes</strong> &#8211; Optional 1D array or list of integer indices for the scans. Used to identify scans
 for logging. Default value is None in which case range(n_scans) will be used as scan_indexes.</li>
 <li><strong>temp_out_group</strong> &#8211; <p>HDF5 group where the results from this run should temporarily be stored. If given, then

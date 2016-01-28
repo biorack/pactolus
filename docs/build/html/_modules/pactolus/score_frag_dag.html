@@ -569,28 +569,34 @@
                                          <span class="n">mpi_root</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                                          <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Create a score cube of MIDAS scores for each</span>
+<span class="sd">    Create in serial a score cube of MIDAS scores for a series of spectra/scans.</span>
 
-<span class="sd">    :param scan_list:         list of numpy ndarrays    Stores peak mzs and intensities.  Each list el has shape of</span>
-<span class="sd">                                                        (n_peaks, 2), with mzs in column 1 an intensities in col 2.</span>
-<span class="sd">                                                        Length of list is n_scans long</span>
-<span class="sd">    :param ms1_mz:            numpy array of floats            The (unneutralized) MS1 mz/s of the precursor ions.</span>
-<span class="sd">                                                        Must have same length as scan_list, i.e. len(ms1_ms) = num_scans</span>
+<span class="sd">    :param scan_list: Stores peak mzs and intensities. Each list element is a numpy array with a shape of</span>
+<span class="sd">                      n_peaks, 2), with mzs in column 1 an intensities in col 2. The list is n_scans long/</span>
+<span class="sd">    :type scan_list: list of numpy ndarrays</span>
 
-<span class="sd">    :param file_lookup_table: full path to a .npy file having a numpy structured array with columns</span>
-<span class="sd">                              (i) filename and (ii) MS1 mass. Alternatively, this may also be the numpy array directly.</span>
+<span class="sd">    :param ms1_mz: The (unneutralized) MS1 mz/s of the precursor ions.</span>
+<span class="sd">    :type ms1_mz: numpy array of floats. Must have same length as scan_list, i.e. len(ms1_ms) = num_scans</span>
 
-<span class="sd">    :param ms1_mass_tol: float, max. diff. in Da of tree_parent_mass &amp; MS1_precursor_mass</span>
+<span class="sd">    :param file_lookup_table: The lookup table for the tree files</span>
+<span class="sd">    :type file_lookup_table: full path to a .npy file having a numpy structured array with columns</span>
+<span class="sd">            (i) filename and (ii) MS1 mass. Alternatively, this may also be the numpy array directly.</span>
 
-<span class="sd">    :param ms2_mass_tol: float, max. mass in Da by which two MS2/MSn peaks can differ</span>
+<span class="sd">    :param ms1_mass_tol: Maximum mass difference in Da of tree_parent_mass &amp; MS1_precursor_mass</span>
+<span class="sd">    :type ms2_mass_tol: float</span>
 
-<span class="sd">    :param neutralizations:   list of floats, adjustments (in Da) added to data peaks in order to neutralize them</span>
+<span class="sd">    :param ms2_mass_tol: Maximum mass difference in Da by which two MS2/MSn peaks can differ</span>
+<span class="sd">    :type ms2_mass_tol: float</span>
 
-<span class="sd">    :param max_depth:         int, optional.  For restricting scoring to lower max depths than</span>
+<span class="sd">    :param neutralizations: adjustments (in Da) added to data peaks in order to neutralize them</span>
+<span class="sd">    :type neutralizations: list of floats or 1D numpy array of floats</span>
+
+<span class="sd">    :param max_depth:  Optional parameter  For restricting scoring to lower max depths than</span>
 <span class="sd">                              are present in the supplied tree</span>
+<span class="sd">    :type max_depth: int</span>
 
-<span class="sd">    :param want_match_matrix:   bool, if True then tuple of (score, match_matrix) is returned, else return score only.</span>
-<span class="sd">                                Default value is False.</span>
+<span class="sd">    :param want_match_matrix: If True then the dict of match matrices is returned as second output. (Default=False)</span>
+<span class="sd">    :type want_match_matrix: bool</span>
 
 <span class="sd">    :param scan_indexes: Optional 1D array or list of integer indices for the scans. Used to identify scans</span>
 <span class="sd">        for logging. Default value is None in which case range(n_scans) will be used as scan_indexes.</span>
@@ -689,7 +695,7 @@
         <span class="n">time_str</span> <span class="o">=</span> <span class="s">&quot;rank : &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">mpi_helper</span><span class="o">.</span><span class="n">get_rank</span><span class="p">())</span> <span class="o">+</span> <span class="s">&quot; : index : &quot;</span> <span class="o">+</span> \
                    <span class="nb">str</span><span class="p">(</span><span class="n">scan_indexes</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">+</span> <span class="s">&quot; : time in s : &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">execution_time</span><span class="p">)</span>
         <span class="n">time_str</span> <span class="o">+=</span> <span class="s">&quot; : num hits : &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">number_of_hits</span><span class="p">)</span>
-        <span class="n">log_helper</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="n">time_str</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+        <span class="n">log_helper</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">__name__</span><span class="p">,</span> <span class="n">time_str</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>  <span class="c"># Set root=None to report from all ranks</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 
@@ -1278,21 +1284,70 @@
                                   <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                                   <span class="n">mpi_root</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    TODO Add documentation</span>
+<span class="sd">    Create a score cube of MIDAS scores for a series of spectra/scans using either</span>
+<span class="sd">    ``score_scan_list_against_trees_serial(..)`` or score_scan_list_against_trees_parallel(..)``</span>
+<span class="sd">    depending on whether we have multiple MPI cores available for processing or not. NOTE:</span>
+<span class="sd">    similar to score_scan_list_against_trees_parallel(..),  only the results</span>
+<span class="sd">    that were computed on the current core are returned on any given core. If we need the</span>
+<span class="sd">    results from all cores, then we need to collect them afterwards.</span>
 
-<span class="sd">    :param scan_list:</span>
-<span class="sd">    :param ms1_mz:</span>
-<span class="sd">    :param file_lookup_table:</span>
-<span class="sd">    :param neutralizations:</span>
-<span class="sd">    :param ms1_mass_tol:</span>
-<span class="sd">    :param ms2_mass_tol:</span>
-<span class="sd">    :param max_depth:</span>
-<span class="sd">    :param want_match_matrix:</span>
-<span class="sd">    :param temp_out_group:</span>
-<span class="sd">    :param schedule:</span>
-<span class="sd">    :param mpi_comm:</span>
-<span class="sd">    :param mpi_root:</span>
-<span class="sd">    :return:</span>
+<span class="sd">    param scan_list: Stores peak mzs and intensities. Each list element is a numpy array with a shape of</span>
+<span class="sd">                      n_peaks, 2), with mzs in column 1 an intensities in col 2. The list is n_scans long/</span>
+<span class="sd">    :type scan_list: list of numpy ndarrays</span>
+
+<span class="sd">    :param ms1_mz: The (unneutralized) MS1 mz/s of the precursor ions.</span>
+<span class="sd">    :type ms1_mz: numpy array of floats. Must have same length as scan_list, i.e. len(ms1_ms) = num_scans</span>
+
+<span class="sd">    :param file_lookup_table: The lookup table for the tree files</span>
+<span class="sd">    :type file_lookup_table: full path to a .npy file having a numpy structured array with columns</span>
+<span class="sd">            (i) filename and (ii) MS1 mass. Alternatively, this may also be the numpy array directly.</span>
+
+<span class="sd">    :param ms1_mass_tol: Maximum mass difference in Da of tree_parent_mass &amp; MS1_precursor_mass</span>
+<span class="sd">    :type ms2_mass_tol: float</span>
+
+<span class="sd">    :param ms2_mass_tol: Maximum mass difference in Da by which two MS2/MSn peaks can differ</span>
+<span class="sd">    :type ms2_mass_tol: float</span>
+
+<span class="sd">    :param neutralizations: adjustments (in Da) added to data peaks in order to neutralize them</span>
+<span class="sd">    :type neutralizations: list of floats or 1D numpy array of floats</span>
+
+<span class="sd">    :param max_depth:  Optional parameter  For restricting scoring to lower max depths than</span>
+<span class="sd">                              are present in the supplied tree</span>
+<span class="sd">    :type max_depth: int</span>
+
+<span class="sd">    :param want_match_matrix: If True then the dict of match matrices is returned as second output. (Default=False)</span>
+<span class="sd">    :type want_match_matrix: bool</span>
+
+<span class="sd">    :param scan_indexes: Optional 1D array or list of integer indices for the scans. Used to identify scans</span>
+<span class="sd">        for logging. Default value is None in which case range(n_scans) will be used as scan_indexes.</span>
+
+<span class="sd">    :param temp_out_group: HDF5 group where the results from this run should temporarily be stored. If given, then</span>
+<span class="sd">        the results for each scan will be written to a group &#39;scan_#&#39; which in turn contains the following</span>
+<span class="sd">        datasets</span>
+
+<span class="sd">         * `score_matrix` : The 2D score matrix</span>
+<span class="sd">         * `match_matrix_#s_#c` where #s is the scan index and #c is the compound index. This dataset contains \</span>
+<span class="sd">            the match matrix for the corresponding scan / compound combindation</span>
+
+<span class="sd">    :param schedule: The parallel scheduling scheme to be used. Default is the recommended DYNAMIC scheduling. See</span>
+<span class="sd">            pactolus.third_party.mpi_helper.parallel_over_axes.SCHEDULES for alternative options.</span>
+
+<span class="sd">    :param mpi_root: The root MPI task. Only needed for consistent logging when running in parallel. Set to NONE</span>
+<span class="sd">        to do logging from all cores.</span>
+
+<span class="sd">    :param mpi_comm: The mpi communicator to be used. Only needed for consistent logging when running in parallel.</span>
+
+<span class="sd">    :return: score_matrix     a numpy ndarray of shape (n_scans, len(file_lookup_table))</span>
+<span class="sd">    :return: match_matrix     Optional output that is only returned if want_match_matrix is set to True.</span>
+<span class="sd">                              Dictionary of  match matrices (one matrix per non-zero score for a given scan and</span>
+<span class="sd">                              compound combination). The keys are tuples of integers describing the index of</span>
+<span class="sd">                              scan and compound in the returned score_matrix.</span>
+<span class="sd">                              Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True</span>
+<span class="sd">                              if given peak matches given node of frag_dag. The return value will be None if</span>
+<span class="sd">                              want_match_matrix is set to False (Default)</span>
+<span class="sd">    :return: scan_index   Numpy array of integer indices indicating the subset of scans for which processing was</span>
+<span class="sd">                              performed by the given core (and or collected to the core in case of the root rank</span>
+<span class="sd">                              with collect set to True).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">MPI_AVAILABLE</span> <span class="ow">or</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">get_size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">score_scan_list_against_trees_serial</span><span class="p">(</span>
@@ -1306,6 +1361,8 @@
                 <span class="n">want_match_matrix</span><span class="o">=</span><span class="n">want_match_matrix</span><span class="p">,</span>
                 <span class="n">temp_out_group</span><span class="o">=</span><span class="n">temp_out_group</span><span class="p">,</span>
                 <span class="n">scan_indexes</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scan_list</span><span class="p">)))</span> <span class="c"># Make sure we return the scan_index also in serial</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">score_scan_list_against_trees_parallel</span><span class="p">(</span>
                 <span class="n">scan_list</span><span class="o">=</span><span class="n">scan_list</span><span class="p">,</span>
@@ -1338,30 +1395,64 @@
                                            <span class="n">mpi_comm</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                                            <span class="n">mpi_root</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    TODO Add documentation</span>
+<span class="sd">    Create in parallel a score cube of MIDAS scores for a series of spectra/scans. Note, only the results</span>
+<span class="sd">    that were computed on the current core are returned on any given core.</span>
 
-<span class="sd">    :param scan_indexes:</span>
-<span class="sd">    :param scan_list:</span>
-<span class="sd">    :param ms1_mz:</span>
-<span class="sd">    :param file_lookup_table:</span>
-<span class="sd">    :param neutralizations:</span>
-<span class="sd">    :param ms2_mass_tol:</span>
-<span class="sd">    :param ms1_mass_tol:</span>
-<span class="sd">    :param max_depth:</span>
-<span class="sd">    :param metabolite_database:</span>
-<span class="sd">    :param temp_out_group:</span>
-<span class="sd">    :param want_match_matrix:</span>
-<span class="sd">    :param schedule:  (None means serial)</span>
-<span class="sd">    :param mpi_comm:</span>
-<span class="sd">    :param mpi_root:</span>
+<span class="sd">    :param scan_list: Stores peak mzs and intensities. Each list element is a numpy array with a shape of</span>
+<span class="sd">                      n_peaks, 2), with mzs in column 1 an intensities in col 2. The list is n_scans long/</span>
+<span class="sd">    :type scan_list: list of numpy ndarrays</span>
+
+<span class="sd">    :param ms1_mz: The (unneutralized) MS1 mz/s of the precursor ions.</span>
+<span class="sd">    :type ms1_mz: numpy array of floats. Must have same length as scan_list, i.e. len(ms1_ms) = num_scans</span>
+
+<span class="sd">    :param file_lookup_table: The lookup table for the tree files</span>
+<span class="sd">    :type file_lookup_table: full path to a .npy file having a numpy structured array with columns</span>
+<span class="sd">            (i) filename and (ii) MS1 mass. Alternatively, this may also be the numpy array directly.</span>
+
+<span class="sd">    :param ms1_mass_tol: Maximum mass difference in Da of tree_parent_mass &amp; MS1_precursor_mass</span>
+<span class="sd">    :type ms2_mass_tol: float</span>
+
+<span class="sd">    :param ms2_mass_tol: Maximum mass difference in Da by which two MS2/MSn peaks can differ</span>
+<span class="sd">    :type ms2_mass_tol: float</span>
+
+<span class="sd">    :param neutralizations: adjustments (in Da) added to data peaks in order to neutralize them</span>
+<span class="sd">    :type neutralizations: list of floats or 1D numpy array of floats</span>
+
+<span class="sd">    :param max_depth:  Optional parameter  For restricting scoring to lower max depths than</span>
+<span class="sd">                              are present in the supplied tree</span>
+<span class="sd">    :type max_depth: int</span>
+
+<span class="sd">    :param want_match_matrix: If True then the dict of match matrices is returned as second output. (Default=False)</span>
+<span class="sd">    :type want_match_matrix: bool</span>
+
+<span class="sd">    :param scan_indexes: Optional 1D array or list of integer indices for the scans. Used to identify scans</span>
+<span class="sd">        for logging. Default value is None in which case range(n_scans) will be used as scan_indexes.</span>
+
+<span class="sd">    :param temp_out_group: HDF5 group where the results from this run should temporarily be stored. If given, then</span>
+<span class="sd">        the results for each scan will be written to a group &#39;scan_#&#39; which in turn contains the following</span>
+<span class="sd">        datasets</span>
+
+<span class="sd">         * `score_matrix` : The 2D score matrix</span>
+<span class="sd">         * `match_matrix_#s_#c` where #s is the scan index and #c is the compound index. This dataset contains \</span>
+<span class="sd">            the match matrix for the corresponding scan / compound combindation</span>
+
+<span class="sd">    :param schedule: The parallel scheduling scheme to be used. Default is the recommended DYNAMIC scheduling. See</span>
+<span class="sd">            pactolus.third_party.mpi_helper.parallel_over_axes.SCHEDULES for alternative options.</span>
+
+<span class="sd">    :param mpi_root: The root MPI task. Only needed for consistent logging when running in parallel. Set to NONE</span>
+<span class="sd">        to do logging from all cores.</span>
+
+<span class="sd">    :param mpi_comm: The mpi communicator to be used. Only needed for consistent logging when running in parallel.</span>
 
 <span class="sd">    :return: score_matrix     a numpy ndarray of shape (n_scans, len(file_lookup_table))</span>
 <span class="sd">    :return: match_matrix     Optional output that is only returned if want_match_matrix is set to True.</span>
-<span class="sd">                              List of lists of match matrices (one matrix per scan). Each entry is a bool matrix</span>
-<span class="sd">                              with n_peaks columns and n_nodes rows. Elements are True if given peak matches given</span>
-<span class="sd">                              node of frag_dag. An entry will be None in case that the hit-score was 0. The return</span>
-<span class="sd">                              value will be None if want_match_matrix is set to False (Default)</span>
-<span class="sd">    :return: scan_index   Numpy array of integer indices indicating the subset of scans for procesing was</span>
+<span class="sd">                              Dictionary of  match matrices (one matrix per non-zero score for a given scan and</span>
+<span class="sd">                              compound combination). The keys are tuples of integers describing the index of</span>
+<span class="sd">                              scan and compound in the returned score_matrix.</span>
+<span class="sd">                              Each value is a bool matrix with n_peaks columns and n_nodes rows. Elements are True</span>
+<span class="sd">                              if given peak matches given node of frag_dag. The return value will be None if</span>
+<span class="sd">                              want_match_matrix is set to False (Default)</span>
+<span class="sd">    :return: scan_index   Numpy array of integer indices indicating the subset of scans for which processing was</span>
 <span class="sd">                              performed by the given core (and or collected to the core in case of the root rank</span>
 <span class="sd">                              with collect set to True).</span>
 
@@ -1830,6 +1921,8 @@
 <span class="sd">        * `clean_output` : Boolean indicating whether we should automatically delete conflicting data in the \</span>
 <span class="sd">                output target defined by --save.</span>
 
+<span class="sd">    :return: The function returns the output of ``score_scan_list_against_trees(..)``. See</span>
+<span class="sd">             score_scan_list_against_trees(...) for details</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">global</span> <span class="n">METACYC_DTYPE</span>
@@ -2015,6 +2108,8 @@
         <span class="n">temp_out_group</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">cleanup_temporary_files</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tempfile_name</span><span class="p">):</span>
             <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tempfile_name</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">results</span>
 
 </div>
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
