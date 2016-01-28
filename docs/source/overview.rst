@@ -164,28 +164,28 @@ Detailed infomation about the command line options is available via the ``--help
                                 that the startup time for Python varies greatly
                                 between cores. (default: False)
 
-HDF5 input data format:
------------------------
-The data within the group should be stored as follows:
-   (1) `peak_mz` : 1D array with all m/z values for all concatenated scans.
-   (2) `peak_value` : 1D array with all intensity values for all concatenated
-       scans. Must have the same length as peak_mz.
-   (3) `peak_array_index` : 1D (or n-D array) where the first dimension must
-        be the scan index and the last dimension  (in the case
-        of n-D arrays) must contain the integer start offset where
-        each scan is located in the peak_mz and peak_value arrays.
-        An n-D array is sometimes used to store additional location
-        That additional data will be ignored.
-  (4) `mz1_mz` or `precursor_mz1` : 1D array with the MS1 precursor m/z value
-      for each scan. Must be #scans long. May also be part of scan_metadata.
-  (5) `scan_metadata` : Group with additional arrays for per-scan
-      metadata that should be passed through. The first
-      dimension of the arrays should always have the same
-      length as the number of scans.
-  (6) `experiment_metadata` : Group with additional arbitrary metadata
-      pertaining to the experiment. This data is pass through as is.
+        HDF5 input data format:
+        -----------------------
+        The data within the group should be stored as follows:
+           (1) `peak_mz` : 1D array with all m/z values for all concatenated scans.
+           (2) `peak_value` : 1D array with all intensity values for all concatenated
+               scans. Must have the same length as peak_mz.
+           (3) `peak_array_index` : 1D (or n-D array) where the first dimension must
+                be the scan index and the last dimension  (in the case
+                of n-D arrays) must contain the integer start offset where
+                each scan is located in the peak_mz and peak_value arrays.
+                An n-D array is sometimes used to store additional location
+                That additional data will be ignored.
+          (4) `mz1_mz` or `precursor_mz1` : 1D array with the MS1 precursor m/z value
+              for each scan. Must be #scans long. May also be part of scan_metadata.
+          (5) `scan_metadata` : Group with additional arrays for per-scan
+              metadata that should be passed through. The first
+              dimension of the arrays should always have the same
+              length as the number of scans.
+          (6) `experiment_metadata` : Group with additional arbitrary metadata
+              pertaining to the experiment. This data is pass through as is.
 
- This command-line tool is broad to you by Pactolus. (LBNL)
+         This command-line tool is broad to you by Pactolus. (LBNL)
 
 
 
