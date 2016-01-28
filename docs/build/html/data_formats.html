@@ -67,6 +67,7 @@
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="overview.html#generating-fragmentation-trees">Generating fragmentation trees</a></li>
 <li class="toctree-l2"><a class="reference internal" href="overview.html#scoring-spectra-against-trees">Scoring spectra against trees</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#hdf5-input-data-format">HDF5 input data format:</a></li>
 <li class="toctree-l2"><a class="reference internal" href="overview.html#scoring-spectra-against-spectra">Scoring spectra against spectra</a></li>
 </ul>
 </li>
@@ -222,8 +223,8 @@ output results may be stored in an arbitray user-defined group which will contai
 <p>In addition, the following optional attributes are typically collected with the output:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="docutils literal"><span class="pre">scoring_time_with_temp_io</span></code>: Floating point number with the time in seconds used to calculate all scores, including any temporary i/o and other operations performed as part of the scoring (e.g., also including compiling of input arguments, reading of input files etc.). When running in parallel. this is the time from the root rank (usually 0).</li>
-<li><code class="docutils literal"><span class="pre">start_time</span></code> : String indicating the start time of the execution in human-readable form (usually from str(datetime.datetime.now()_). This is the time when python was ready to run. When running in parallel with MPI, this is the time when rank 0 started.</li>
+<li><code class="docutils literal"><span class="pre">scoring_time_with_temp_io</span></code>: Floating point number with the time in seconds used to calculate all scores, including any temporary i/o and other operations performed as part of the scoring (e.g., also including compiling of input arguments, reading of input files etc.). When running in parallel. this is the time from the root rank (usually 0) while the start-time begins after the command-line args have been parsed.</li>
+<li><code class="docutils literal"><span class="pre">start_time</span></code> : String indicating the start time of the execution in human-readable form (usually from str(datetime.datetime.now()_). This is the time when python was ready to run and after the command-line args have been parsed. When running in parallel with MPI, this is the time when rank 0 started.</li>
 <li><code class="docutils literal"><span class="pre">time_to_collect_and_write_output</span></code> : The time in seconds used on the master rank to collect the results from all ranks (from the tempfiles and other outputs) and write the consolidated results to file.</li>
 <li>All arguments provided to <code class="xref py py-func docutils literal"><span class="pre">pactolus.score_frag_dag.main()</span></code> either via the command-line or as explicit keyword arguments</li>
 </ul>

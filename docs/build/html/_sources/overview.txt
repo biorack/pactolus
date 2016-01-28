@@ -45,13 +45,12 @@ An example call for the tool might look as follow:
         --save local_data/test_out.h5
         --tempdir local_data/temp
         --match_matrix True
-        --loglevel DEBUG
 
 Detailed infomation about the command line options is available via the ``--help`` command line option. For example:
 
 .. code-block:: python
 
-    python pactolus/score_frag_dag.py --help
+     python pactolus/score_frag_dag.py --help
 
         usage: score_frag_dag.py [-h] --input INPUT [--save SAVE]
                                  [--precursor_mz PRECURSOR_MZ] --trees TREES
@@ -60,7 +59,8 @@ Detailed infomation about the command line options is available via the ``--help
                                  {0,1,2,3,4,5,6,7,8,9} --neutralizations
                                  NEUTRALIZATIONS
                                  [--schedule {DYNAMIC,STATIC_1D,STATIC}]
-                                 [--collect COLLECT] [--pass_scanmeta PASS_SCANMETA]
+                                 [--start_barrier START_BARRIER]
+                                 [--pass_scanmeta PASS_SCANMETA]
                                  [--pass_scans PASS_SCANS]
                                  [--pass_compound_meta PASS_COMPOUND_META]
                                  [--metabolite_database METABOLITE_DATABASE]
@@ -157,31 +157,36 @@ Detailed infomation about the command line options is available via the ``--help
           --schedule {DYNAMIC,STATIC_1D,STATIC}
                                 Scheduling to be used for parallel MPI runs (default:
                                 DYNAMIC)
-          --collect COLLECT     Collect results to the MPI root rank when running in
-                                parallel (default: True)
+          --start_barrier START_BARRIER
+                                Add an MPI barrier before recording the start-time for
+                                the analysis but after parsing the command-line args.
+                                This can help in measuring runtime performance in case
+                                that the startup time for Python varies greatly
+                                between cores. (default: False)
 
-        HDF5 input data format:
-        -----------------------
-        The data within the group should be stored as follows:
-           (1) `peak_mz` : 1D array with all m/z values for all concatenated scans.
-           (2) `peak_value` : 1D array with all intensity values for all concatenated
-               scans. Must have the same length as peak_mz.
-           (3) `peak_array_index` : 1D (or n-D array) where the first dimension must
-                be the scan index and the last dimension  (in the case
-                of n-D arrays) must contain the integer start offset where
-                each scan is located in the peak_mz and peak_value arrays.
-                An n-D array is sometimes used to store additional location
-                That additional data will be ignored.
-          (4) `mz1_mz` or `precursor_mz1` : 1D array with the MS1 precursor m/z value
-              for each scan. Must be #scans long. May also be part of scan_metadata.
-          (5) `scan_metadata` : Group with additional arrays for per-scan
-              metadata that should be passed through. The first
-              dimension of the arrays should always have the same
-              length as the number of scans.
-          (6) `experiment_metadata` : Group with additional arbitrary metadata
-              pertaining to the experiment. This data is pass through as is.
+HDF5 input data format:
+-----------------------
+The data within the group should be stored as follows:
+   (1) `peak_mz` : 1D array with all m/z values for all concatenated scans.
+   (2) `peak_value` : 1D array with all intensity values for all concatenated
+       scans. Must have the same length as peak_mz.
+   (3) `peak_array_index` : 1D (or n-D array) where the first dimension must
+        be the scan index and the last dimension  (in the case
+        of n-D arrays) must contain the integer start offset where
+        each scan is located in the peak_mz and peak_value arrays.
+        An n-D array is sometimes used to store additional location
+        That additional data will be ignored.
+  (4) `mz1_mz` or `precursor_mz1` : 1D array with the MS1 precursor m/z value
+      for each scan. Must be #scans long. May also be part of scan_metadata.
+  (5) `scan_metadata` : Group with additional arrays for per-scan
+      metadata that should be passed through. The first
+      dimension of the arrays should always have the same
+      length as the number of scans.
+  (6) `experiment_metadata` : Group with additional arbitrary metadata
+      pertaining to the experiment. This data is pass through as is.
 
-         This command-line tool is broad to you by Pactolus. (LBNL)
+ This command-line tool is broad to you by Pactolus. (LBNL)
+
 
 
 Scoring many spectra against many trees

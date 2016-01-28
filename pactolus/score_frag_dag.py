@@ -499,7 +499,7 @@ def score_scan_list_against_trees_serial(scan_list,
      appropriate for scans directly extracted from mzML files or for centroided data.  This function does NOT
      assume that each scan in the list has the same precursors.
     """
-    log_helper.debug(__name__, 'Processing scans', comm=mpi_comm, root=mpi_root)
+    # log_helper.debug(__name__, 'Processing scans', comm=mpi_comm, root=mpi_root)
     # load file_lookup_table if needed
     if isinstance(file_lookup_table, basestring):
         file_lookup_table = np.load(file_lookup_table)
@@ -896,6 +896,9 @@ def parse_command_line_args():
              * `pass_compound_meta` : Boolean indicating whether we should compile compound metadata from the \
                         tree file and pass it through to the output.
              * `schedule` : The scheduling scheme to be used
+             * `start_barrier` : Add an MPI barrier before recording the start-time for the analysis \
+                         but after parsing the command-line args. This can help in measuring "runtime performance \
+                         in case that the startup time for Python varies greatly between cores.
              * `collect` : Boolean defining whether the results should be collected to rank 0 in parallel
              * `loglevel` : String indicating the logging level to be used
              * `tempdir` : Directory where temporary data files should be stored. Temporary files are created \
@@ -1017,13 +1020,16 @@ def parse_command_line_args():
                                          choices=mpi_helper.parallel_over_axes.SCHEDULES.values(),
                                          default=mpi_helper.parallel_over_axes.SCHEDULES["DYNAMIC"],
                                          dest="schedule")
-    parallel_argument_group.add_argument("--collect",
-                                         help="Collect results to the MPI root rank when running in parallel",
+    parallel_argument_group.add_argument("--start_barrier",
+                                         help="Add an MPI barrier before recording the start-time for the analysis " +
+                                              "but after parsing the command-line args. This can help in measuring " +
+                                              "runtime performance in case that the startup time for Python varies " +
+                                              "greatly between cores.",
                                          action="store",
                                          type=dtypes["bool"],
                                          required=False,
-                                         default=True,
-                                         dest="collect")
+                                         default=False,
+                                         dest='start_barrier')
     optional_argument_group.add_argument("--pass_scanmeta",
                                          help="Pass per-scan metadata through and include it in the final output",
                                          action="store",
@@ -1290,27 +1296,24 @@ def score_scan_list_against_trees_parallel(scan_list,
             results, block_index = scheduler.run()
 
             # If we processed scans then compile the results
-            scan_index = np.empty(dtype='int')
+            scan_index = np.empty(shape=0, dtype='int')
             score_matrix = np.zeros(shape=(0, num_compounds), dtype=float)
-            match_matrix = [] if want_match_matrix else None
+            match_matrix = {} if want_match_matrix else None
             if len(results) > 0:
-                 # Compile the result from the current core
+                # Compile the result from the current core
                 score_matrix_list = [ri[0] for ri in results]
                 match_matrix_list = [ri[1] for ri in results]
                 scan_index_list = [ri[2] for ri in results]
                 # Compile the list of scan indexes
                 if len(scan_index_list) > 0:
                     scan_index = np.concatenate(tuple(scan_index_list), axis=0)
-                    num_processed_scans = scan_index.size
-                else:
-                    num_processed_scans = 0
                 # Compile the score matrix
                 if len(score_matrix_list) > 0:
                     score_matrix = np.concatenate(tuple(score_matrix_list), axis=0)
                 # Compile the match matrix list
                 if want_match_matrix and len(match_matrix_list) > 0:
                     for mm in match_matrix_list:
-                        match_matrix += mm
+                        match_matrix.update(mm)
 
             return score_matrix, match_matrix, scan_index
 
@@ -1330,6 +1333,7 @@ def score_scan_list_against_trees_parallel(scan_list,
             ms2_mass_tol=ms2_mass_tol,
             max_depth=max_depth,
             want_match_matrix=want_match_matrix,
+            scan_indexes=scan_indexes,
             temp_out_group=temp_out_group,
             mpi_root=None, # We want to log the results from all scans
             mpi_comm=mpi_comm)
@@ -1693,6 +1697,9 @@ def score_main(use_command_line=True, **kwargs):
          * `pass_compound_meta` : Boolean indicating whether we should compile compound metadata from the \
                     tree file and pass it through to the output.
          * `schedule` : The scheduling scheme to be used
+         * `start_barrier` : Add an MPI barrier before recording the start-time for the analysis \
+                     but after parsing the command-line args. This can help in measuring "runtime performance \
+                     in case that the startup time for Python varies greatly between cores.
          * `collect` : Boolean defining whether the results should be collected to rank 0 in parallel
          * `loglevel` : String indicating the logging level to be used
          * `tempdir` : Directory where temporary data files should be stored. Temporary files are created \
@@ -1708,7 +1715,6 @@ def score_main(use_command_line=True, **kwargs):
     # Get the MPI information and make sure that all ranks are ready. This is mainly to ensure a half-way consistent timing
     mpi_root = 0
     mpi_comm = mpi_helper.get_comm_world()
-    mpi_helper.barrier(comm=mpi_comm)
 
     # Record the start time
     start_time = time.time()
@@ -1746,7 +1752,13 @@ def score_main(use_command_line=True, **kwargs):
     clean_tempdir = command_line_args['clean_tempdir']
     clean_output = command_line_args['clean_output']
     pass_compound_meta = command_line_args['pass_compound_meta']
+    start_barrier = command_line_args['start_barrier']
 
+    if start_barrier:
+        mpi_helper.barrier(comm=mpi_comm)
+
+    start_time = time.time()
+    start_time_meta = datetime.datetime.now()
 
     # Set the log level
     if loglevel in log_helper.log_levels.keys():
@@ -1875,6 +1887,7 @@ def score_main(use_command_line=True, **kwargs):
 
     # Close the output file for the current core. We do this after the consolidation of the ouptut data
     # to avoid that Python might clean up the NamedTemporaryFile when we close it.
+    mpi_helper.barrier(comm=mpi_comm)  # Make sure we do not clean up files that our main rank still needs
     if temp_out_group is not None:
         tempfile_name = temp_out_group.file.filename
         temp_out_group.file.close()
