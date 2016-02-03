@@ -1,6 +1,6 @@
 #!python
 """
-Generate fragmentation trees for molecules.
+Generate fragmentation directed acyclic graph (ie: trees) for molecules.
 
 """
 __authors__ = 'Curt R. Fischer, Oliver Ruebel, Benjamin P. Bowen'
@@ -171,6 +171,7 @@ class FragTree(object):
         if Chem.RemoveHs(mol).GetNumAtoms() != mol.GetNumAtoms():
             raise TypeError('Molecule must have only implicit H atoms.')
 
+        #TODO This expression should allow for molecules with a permanent charge, but forbid molecules that can be neutralized
         if GetFormalCharge(mol) != 0:
             raise TypeError('Molecule must have overall neutral charge.')
 
@@ -451,6 +452,8 @@ class FragTreeLibrary(object):
 
                 # set attributes
                 hdf5_group.attrs['inchi'] = inchi
+                hdf5_group.attrs['permanent_charge'] = 0
+                #TODO: calculate and store the permanent charge automatically
                 hdf5_group.attrs['num_atoms'] = mol_tree.num_atoms
                 hdf5_group.attrs['num_bonds'] = mol_tree.num_bonds
                 hdf5_group.attrs['num_fragments'] = mol_tree.num_frags

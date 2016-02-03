@@ -1,6 +1,6 @@
 #!python
 """
-Score spectra/scans against a collection of molecular fragmentation trees.
+Score spectra/scans against a collection of molecular fragmentation directed acyclic graphs (trees).
 
 """
 # TODO Remove metacyc name
@@ -14,7 +14,6 @@ Score spectra/scans against a collection of molecular fragmentation trees.
 # QUESTION How can we get the `name`, `metacyc_id`, `links` from the `inchi string needed to compile the metadata from the treefiles without the database?
 # QUESTION Do we really need score_peakcube_against_trees(...)
 # QUESTION Do we really need make_pactolus_hittable now that we have collect_score_scan_list_results
-# QUESTION
 
 # TODO Update tree files to include molecule name and other metadata from the original molecular database
 # TODO Update crossref_to_db to allow look-up of information from tree files
@@ -23,12 +22,14 @@ Score spectra/scans against a collection of molecular fragmentation trees.
 # TODO score_scan_list_against_trees test support for 'want_match_matrix' parameter
 # TODO score_scan_list_against_trees and score_peakcube_against_trees allow return of a sparse matrix?
 # TODO Test the workflow with the retrieval of the match matrix and allow storage of the match matrix in BASTet
-# TODO In the new setup we compile the ouput as indipendent arrays (rather than as a HIT_TABLE). Should we remove the HIT_TABLE functionality?
+# TODO In the new setup we compile the ouput as independent arrays (rather than as a HIT_TABLE). Should we remove the HIT_TABLE functionality?
 # TODO Test that everything is working
 # TODO Add description of the HDF5 format used to store fragmentation trees to the documentation
 # TODO Need to test score_peakcube_against_trees(...) after the numerous changes we have made
 # TODO Parallelize score_peakcube_against_trees(...)
 # TODO Add feature to restart a scoring run based on the temporary data that has been stored.
+# TODO Use permanent_charge stored as an hdf5 attribute to limit possible precursor m/z
+# TODO Use Permanent_charge location to limit possible fragment ion type
 
 # FIXED: max_depth parameter was not passed to the scoring function in neither score_scan_list_against_trees nor score_peak_cube_against_trees
 # FIXED: Updated score_scan_list_against_trees nor score_peak_cube_against_trees functions to replace the params dict with explicit input parameters
