@@ -3,7 +3,15 @@
 Score spectra/scans against a collection of molecular fragmentation trees.
 
 """
-# QUESTION How can we get the `name`, `metacyc_id`, `lins` from the `inchi string needed to compile the metadata from the treefiles without the database?
+# TODO Remove metacyc name
+# TODO Remove metabolite database from the scoring
+# TODO Pull out crossref_db and hit_table function to a new module for post-processing
+# TODO Support separate neutralizations for positive and negative
+# TODO Require per-scan polarity as part of the inpu (just like precursor m/z). This should be <=0 its negative if its >0 its positive. Possibly also allow text array with 'pos' and 'neg'.
+# TODO Make the scoring function a parameter to allow us to add different scoring funcitons
+# TODO Add helper tool module to make SLURM an PBS scripts and build pactolus
+
+# QUESTION How can we get the `name`, `metacyc_id`, `links` from the `inchi string needed to compile the metadata from the treefiles without the database?
 # QUESTION Do we really need score_peakcube_against_trees(...)
 # QUESTION Do we really need make_pactolus_hittable now that we have collect_score_scan_list_results
 # QUESTION
@@ -1757,8 +1765,13 @@ def check_scoring_output_targets(output_filepath,
             else:
                 tempdir_clean = False
 
-    return output_clean, tempdir_clean
+        _ = mpi_helper.broadcast(data=output_clean, comm=mpi_comm, root=mpi_root)
+        _ = mpi_helper.broadcast(data=tempdir_clean, comm=mpi_comm, root=mpi_root)
+    else:
+        output_clean = mpi_helper.broadcast(data=None, comm=mpi_comm, root=mpi_root)
+        tempdir_clean = mpi_helper.broadcast(data=None, comm=mpi_comm, root=mpi_root)
 
+    return output_clean, tempdir_clean
 
 
 def score_main(use_command_line=True, **kwargs):
