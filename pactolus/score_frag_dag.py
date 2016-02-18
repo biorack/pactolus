@@ -236,11 +236,11 @@ def calculate_MIDAS_score(mz_intensity_arr, tree, mass_tol, neutralizations, max
     :param max_depth:           int, truncates tree, keeping only nodes <= max_depth bond breakages away from root
     :param want_match_matrix:   bool, if True then tuple of (score, match_matrix) is returned, else return score only
     :return:                    score, float, a MIDAS score
-    :return:                    match_matrix, a bool matrix with n_peaks columns and n_nodes rows.
+    :return:                    match_matrix, a bool matrix with a shape of (n_tree_nodes, n_peaks).
                                               elements are True if given peak matches given node of frag_dag
                                               Returned only if want_match_matrix is True, othewise None is returned.
     """
-
+    # NOTE: in the following we refer to axis=1 as rows and axis=0 as columns
     # attempt to truncate tree if max_depth is supplied
     if max_depth:
         node_depths = tree['bond_bool_arr'].sum(axis=1)
@@ -257,30 +257,35 @@ def calculate_MIDAS_score(mz_intensity_arr, tree, mass_tol, neutralizations, max
 
     # if there are no matching fragments, the score is 0
     if unique_frag_arr.size == 0:
-        return 0
+        score = 0 
+        match_matrix = None 
+    # Compute the score and match matrix
+    else:   
+        # initialize and modify in place the plaus_score array:
+        plaus_score = np.zeros(len(tree))
+        bfs_plausibility_score(plaus_score, tree, matches=unique_frag_arr)
 
-    # initialize and modify in place the plaus_score array:
-    plaus_score = np.zeros(len(tree))
-    bfs_plausibility_score(plaus_score, tree, matches=unique_frag_arr)
+        # construct match_matrix to matrix (csr format) where columns are data peaks, rows are tree nodes.
+        # matrix is constructed as sparse but converted to dense.
+        # TODO:  slight speedup probably possible for full sparse implementation.
+        inds = np.concatenate(matching_frag_sets)  # row indices
+        indptr = np.append(0, np.cumsum(([len(el) for el in matching_frag_sets])))
+        data = np.ones(shape=inds.shape, dtype=bool)
+        match_matrix = csc_matrix((data, inds, indptr), dtype=bool).toarray()
 
-    # construct match_matrix to matrix (csr format) where columns are data peaks, rows are tree nodes.
-    #  matrix is constructed as sparse but converted to dense.
-    #  slight speedup probably possible for full sparse implementation.
-    inds = np.concatenate(matching_frag_sets)  # row indices
-    indptr = np.append(0, np.cumsum(([len(el) for el in matching_frag_sets])))
-    data = np.ones(shape=inds.shape, dtype=bool)
-    match_matrix = csc_matrix((data, inds, indptr), dtype=bool).toarray()
+        # loop over rows of match_matrix to calculate score
+        score = 0
+        rows_with_matches = np.where(match_matrix.any(axis=1))[0]
+        for row_idx in rows_with_matches:
+            col_idx = np.where(match_matrix[row_idx, :])[0]
+            lambdas = calculate_lambda(tree[row_idx]['mass_vec'], data_masses[col_idx], mass_tol)
+            subscore = (plaus_score[row_idx] * data_rel_intensities[col_idx] * lambdas).max()
+            score += subscore
 
-    # loop over rows of match_matrix to calculate score
-    score = 0
-    rows_with_matches = np.where(match_matrix.any(axis=1))[0]
-    for row_idx in rows_with_matches:
-        col_idx = np.where(match_matrix[row_idx, :])[0]
-        lambdas = calculate_lambda(tree[row_idx]['mass_vec'], data_masses[col_idx], mass_tol)
-        subscore = (plaus_score[row_idx] * data_rel_intensities[col_idx] * lambdas).max()
-        score += subscore
-
+    # Return the reuqested results
     if want_match_matrix:
+        if match_matrix is not None:
+            print (match_matrix.shape, mz_intensity_arr.shape, tree.shape)
         return score, match_matrix
     else:
         return score, None
@@ -572,7 +577,7 @@ def score_scan_list_against_trees_serial(scan_list,
                                                                       neutralizations=neutralizations,
                                                                       max_depth=max_depth,
                                                                       want_match_matrix=want_match_matrix)
-            if want_match_matrix:
+            if want_match_matrix and temp_matrix is not None:
                 match_matrix_dict[(i,idx)] = temp_matrix
 
         number_of_hits = (score_matrix[i, :] > 0).sum()
