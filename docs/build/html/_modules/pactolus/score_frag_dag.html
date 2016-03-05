@@ -121,13 +121,20 @@
   <h1>Source code for pactolus.score_frag_dag</h1><div class="highlight"><pre>
 <span class="c">#!python</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Score spectra/scans against a collection of molecular fragmentation trees.</span>
+<span class="sd">Score spectra/scans against a collection of molecular fragmentation directed acyclic graphs (trees).</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="c"># QUESTION How can we get the `name`, `metacyc_id`, `lins` from the `inchi string needed to compile the metadata from the treefiles without the database?</span>
+<span class="c"># TODO Remove metacyc name</span>
+<span class="c"># TODO Remove metabolite database from the scoring</span>
+<span class="c"># TODO Pull out crossref_db and hit_table function to a new module for post-processing</span>
+<span class="c"># TODO Support separate neutralizations for positive and negative</span>
+<span class="c"># TODO Require per-scan polarity as part of the inpu (just like precursor m/z). This should be &lt;=0 its negative if its &gt;0 its positive. Possibly also allow text array with &#39;pos&#39; and &#39;neg&#39;.</span>
+<span class="c"># TODO Make the scoring function a parameter to allow us to add different scoring funcitons</span>
+<span class="c"># TODO Add helper tool module to make SLURM an PBS scripts and build pactolus</span>
+
+<span class="c"># QUESTION How can we get the `name`, `metacyc_id`, `links` from the `inchi string needed to compile the metadata from the treefiles without the database?</span>
 <span class="c"># QUESTION Do we really need score_peakcube_against_trees(...)</span>
 <span class="c"># QUESTION Do we really need make_pactolus_hittable now that we have collect_score_scan_list_results</span>
-<span class="c"># QUESTION</span>
 
 <span class="c"># TODO Update tree files to include molecule name and other metadata from the original molecular database</span>
 <span class="c"># TODO Update crossref_to_db to allow look-up of information from tree files</span>
@@ -136,12 +143,14 @@
 <span class="c"># TODO score_scan_list_against_trees test support for &#39;want_match_matrix&#39; parameter</span>
 <span class="c"># TODO score_scan_list_against_trees and score_peakcube_against_trees allow return of a sparse matrix?</span>
 <span class="c"># TODO Test the workflow with the retrieval of the match matrix and allow storage of the match matrix in BASTet</span>
-<span class="c"># TODO In the new setup we compile the ouput as indipendent arrays (rather than as a HIT_TABLE). Should we remove the HIT_TABLE functionality?</span>
+<span class="c"># TODO In the new setup we compile the ouput as independent arrays (rather than as a HIT_TABLE). Should we remove the HIT_TABLE functionality?</span>
 <span class="c"># TODO Test that everything is working</span>
 <span class="c"># TODO Add description of the HDF5 format used to store fragmentation trees to the documentation</span>
 <span class="c"># TODO Need to test score_peakcube_against_trees(...) after the numerous changes we have made</span>
 <span class="c"># TODO Parallelize score_peakcube_against_trees(...)</span>
 <span class="c"># TODO Add feature to restart a scoring run based on the temporary data that has been stored.</span>
+<span class="c"># TODO Use permanent_charge stored as an hdf5 attribute to limit possible precursor m/z</span>
+<span class="c"># TODO Use Permanent_charge location to limit possible fragment ion type</span>
 
 <span class="c"># FIXED: max_depth parameter was not passed to the scoring function in neither score_scan_list_against_trees nor score_peak_cube_against_trees</span>
 <span class="c"># FIXED: Updated score_scan_list_against_trees nor score_peak_cube_against_trees functions to replace the params dict with explicit input parameters</span>
@@ -348,11 +357,11 @@
 <span class="sd">    :param max_depth:           int, truncates tree, keeping only nodes &lt;= max_depth bond breakages away from root</span>
 <span class="sd">    :param want_match_matrix:   bool, if True then tuple of (score, match_matrix) is returned, else return score only</span>
 <span class="sd">    :return:                    score, float, a MIDAS score</span>
-<span class="sd">    :return:                    match_matrix, a bool matrix with n_peaks columns and n_nodes rows.</span>
+<span class="sd">    :return:                    match_matrix, a bool matrix with a shape of (n_tree_nodes, n_peaks).</span>
 <span class="sd">                                              elements are True if given peak matches given node of frag_dag</span>
 <span class="sd">                                              Returned only if want_match_matrix is True, othewise None is returned.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
+    <span class="c"># NOTE: in the following we refer to axis=1 as rows and axis=0 as columns</span>
     <span class="c"># attempt to truncate tree if max_depth is supplied</span>
     <span class="k">if</span> <span class="n">max_depth</span><span class="p">:</span>
         <span class="n">node_depths</span> <span class="o">=</span> <span class="n">tree</span><span class="p">[</span><span class="s">&#39;bond_bool_arr&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
@@ -369,30 +378,35 @@
 
     <span class="c"># if there are no matching fragments, the score is 0</span>
     <span class="k">if</span> <span class="n">unique_frag_arr</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">0</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">match_matrix</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="c"># Compute the score and match matrix</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># initialize and modify in place the plaus_score array:</span>
+        <span class="n">plaus_score</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tree</span><span class="p">))</span>
+        <span class="n">bfs_plausibility_score</span><span class="p">(</span><span class="n">plaus_score</span><span class="p">,</span> <span class="n">tree</span><span class="p">,</span> <span class="n">matches</span><span class="o">=</span><span class="n">unique_frag_arr</span><span class="p">)</span>
 
-    <span class="c"># initialize and modify in place the plaus_score array:</span>
-    <span class="n">plaus_score</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tree</span><span class="p">))</span>
-    <span class="n">bfs_plausibility_score</span><span class="p">(</span><span class="n">plaus_score</span><span class="p">,</span> <span class="n">tree</span><span class="p">,</span> <span class="n">matches</span><span class="o">=</span><span class="n">unique_frag_arr</span><span class="p">)</span>
+        <span class="c"># construct match_matrix to matrix (csr format) where columns are data peaks, rows are tree nodes.</span>
+        <span class="c"># matrix is constructed as sparse but converted to dense.</span>
+        <span class="c"># TODO:  slight speedup probably possible for full sparse implementation.</span>
+        <span class="n">inds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">matching_frag_sets</span><span class="p">)</span>  <span class="c"># row indices</span>
+        <span class="n">indptr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(([</span><span class="nb">len</span><span class="p">(</span><span class="n">el</span><span class="p">)</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">matching_frag_sets</span><span class="p">])))</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">inds</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">match_matrix</span> <span class="o">=</span> <span class="n">csc_matrix</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="n">inds</span><span class="p">,</span> <span class="n">indptr</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
 
-    <span class="c"># construct match_matrix to matrix (csr format) where columns are data peaks, rows are tree nodes.</span>
-    <span class="c">#  matrix is constructed as sparse but converted to dense.</span>
-    <span class="c">#  slight speedup probably possible for full sparse implementation.</span>
-    <span class="n">inds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">matching_frag_sets</span><span class="p">)</span>  <span class="c"># row indices</span>
-    <span class="n">indptr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(([</span><span class="nb">len</span><span class="p">(</span><span class="n">el</span><span class="p">)</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">matching_frag_sets</span><span class="p">])))</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">inds</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-    <span class="n">match_matrix</span> <span class="o">=</span> <span class="n">csc_matrix</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="n">inds</span><span class="p">,</span> <span class="n">indptr</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+        <span class="c"># loop over rows of match_matrix to calculate score</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">rows_with_matches</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">match_matrix</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">row_idx</span> <span class="ow">in</span> <span class="n">rows_with_matches</span><span class="p">:</span>
+            <span class="n">col_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">match_matrix</span><span class="p">[</span><span class="n">row_idx</span><span class="p">,</span> <span class="p">:])[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">lambdas</span> <span class="o">=</span> <span class="n">calculate_lambda</span><span class="p">(</span><span class="n">tree</span><span class="p">[</span><span class="n">row_idx</span><span class="p">][</span><span class="s">&#39;mass_vec&#39;</span><span class="p">],</span> <span class="n">data_masses</span><span class="p">[</span><span class="n">col_idx</span><span class="p">],</span> <span class="n">mass_tol</span><span class="p">)</span>
+            <span class="n">subscore</span> <span class="o">=</span> <span class="p">(</span><span class="n">plaus_score</span><span class="p">[</span><span class="n">row_idx</span><span class="p">]</span> <span class="o">*</span> <span class="n">data_rel_intensities</span><span class="p">[</span><span class="n">col_idx</span><span class="p">]</span> <span class="o">*</span> <span class="n">lambdas</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+            <span class="n">score</span> <span class="o">+=</span> <span class="n">subscore</span>
 
-    <span class="c"># loop over rows of match_matrix to calculate score</span>
-    <span class="n">score</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">rows_with_matches</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">match_matrix</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">for</span> <span class="n">row_idx</span> <span class="ow">in</span> <span class="n">rows_with_matches</span><span class="p">:</span>
-        <span class="n">col_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">match_matrix</span><span class="p">[</span><span class="n">row_idx</span><span class="p">,</span> <span class="p">:])[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">lambdas</span> <span class="o">=</span> <span class="n">calculate_lambda</span><span class="p">(</span><span class="n">tree</span><span class="p">[</span><span class="n">row_idx</span><span class="p">][</span><span class="s">&#39;mass_vec&#39;</span><span class="p">],</span> <span class="n">data_masses</span><span class="p">[</span><span class="n">col_idx</span><span class="p">],</span> <span class="n">mass_tol</span><span class="p">)</span>
-        <span class="n">subscore</span> <span class="o">=</span> <span class="p">(</span><span class="n">plaus_score</span><span class="p">[</span><span class="n">row_idx</span><span class="p">]</span> <span class="o">*</span> <span class="n">data_rel_intensities</span><span class="p">[</span><span class="n">col_idx</span><span class="p">]</span> <span class="o">*</span> <span class="n">lambdas</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-        <span class="n">score</span> <span class="o">+=</span> <span class="n">subscore</span>
-
+    <span class="c"># Return the reuqested results</span>
     <span class="k">if</span> <span class="n">want_match_matrix</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">match_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="p">(</span><span class="n">match_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">mz_intensity_arr</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">score</span><span class="p">,</span> <span class="n">match_matrix</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">score</span><span class="p">,</span> <span class="bp">None</span>
@@ -684,7 +698,7 @@
                                                                       <span class="n">neutralizations</span><span class="o">=</span><span class="n">neutralizations</span><span class="p">,</span>
                                                                       <span class="n">max_depth</span><span class="o">=</span><span class="n">max_depth</span><span class="p">,</span>
                                                                       <span class="n">want_match_matrix</span><span class="o">=</span><span class="n">want_match_matrix</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">want_match_matrix</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">want_match_matrix</span> <span class="ow">and</span> <span class="n">temp_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
                 <span class="n">match_matrix_dict</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span><span class="n">idx</span><span class="p">)]</span> <span class="o">=</span> <span class="n">temp_matrix</span>
 
         <span class="n">number_of_hits</span> <span class="o">=</span> <span class="p">(</span><span class="n">score_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
@@ -1624,11 +1638,13 @@
     <span class="k">try</span><span class="p">:</span>
         <span class="n">output_group</span> <span class="o">=</span> <span class="n">output_file</span><span class="p">[</span><span class="n">output_grouppath</span><span class="p">]</span>
     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-        <span class="n">current_group</span> <span class="o">=</span> <span class="n">output_file</span><span class="p">[</span><span class="s">&#39;/&#39;</span><span class="p">]</span>   <span class="c"># Split the path into the hiearchy of subgroups to be used.</span>
+        <span class="n">current_group</span> <span class="o">=</span> <span class="n">output_file</span><span class="p">[</span><span class="s">&#39;/&#39;</span><span class="p">]</span>   <span class="c"># Split the path into the hierarchy of subgroups to be used.</span>
         <span class="c"># Creat all subgroups</span>
         <span class="k">for</span> <span class="n">subgroup</span> <span class="ow">in</span> <span class="n">output_grouppath</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">):</span>
             <span class="n">current_group</span> <span class="o">=</span> <span class="n">current_group</span><span class="o">.</span><span class="n">require_group</span><span class="p">(</span><span class="n">subgroup</span><span class="p">)</span>
         <span class="n">output_group</span> <span class="o">=</span> <span class="n">current_group</span>
+    <span class="c"># create the subgroup for the score matrices</span>
+    <span class="n">output_match_matrix_group</span> <span class="o">=</span> <span class="n">output_group</span><span class="o">.</span><span class="n">require_group</span><span class="p">(</span><span class="s">&#39;match_matrix&#39;</span><span class="p">)</span>
 
 
     <span class="n">score_dataset</span> <span class="o">=</span> <span class="n">output_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;score_matrix&#39;</span><span class="p">,</span>
@@ -1661,12 +1677,12 @@
                 <span class="n">match_matrix</span> <span class="o">=</span> <span class="n">scan_group</span><span class="p">[</span><span class="n">match_matrix_name</span><span class="p">][:]</span>
                 <span class="n">num_matched</span><span class="p">[</span><span class="n">scan_index</span><span class="p">,</span> <span class="n">compound_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">match_matrix</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
                 <span class="c"># Create a compressed dataset for the match matrix</span>
-                <span class="n">match_matrix_dataset</span> <span class="o">=</span> <span class="n">output_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">match_matrix_name</span><span class="p">,</span>
-                                                                   <span class="n">data</span><span class="o">=</span><span class="n">match_matrix</span><span class="p">,</span>
-                                                                   <span class="n">chunks</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                                                                   <span class="n">fillvalue</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                                                                   <span class="n">compression</span><span class="o">=</span><span class="s">&#39;gzip&#39;</span><span class="p">,</span>
-                                                                   <span class="n">compression_opts</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+                <span class="n">match_matrix_dataset</span> <span class="o">=</span> <span class="n">output_match_matrix_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">match_matrix_name</span><span class="p">,</span>
+                                                                                <span class="n">data</span><span class="o">=</span><span class="n">match_matrix</span><span class="p">,</span>
+                                                                                <span class="n">chunks</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                                                                <span class="n">fillvalue</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                                                                <span class="n">compression</span><span class="o">=</span><span class="s">&#39;gzip&#39;</span><span class="p">,</span>
+                                                                                <span class="n">compression_opts</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
                 <span class="c"># Write only the few elements that are True to avoid initialization of chunks with False only</span>
                 <span class="n">match_matrix_dataset</span><span class="p">[</span><span class="n">match_matrix</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
 
@@ -1878,8 +1894,13 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">tempdir_clean</span> <span class="o">=</span> <span class="bp">False</span>
 
-    <span class="k">return</span> <span class="n">output_clean</span><span class="p">,</span> <span class="n">tempdir_clean</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">broadcast</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">output_clean</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">broadcast</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">tempdir_clean</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">output_clean</span> <span class="o">=</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">broadcast</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
+        <span class="n">tempdir_clean</span> <span class="o">=</span> <span class="n">mpi_helper</span><span class="o">.</span><span class="n">broadcast</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">comm</span><span class="o">=</span><span class="n">mpi_comm</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="n">mpi_root</span><span class="p">)</span>
 
+    <span class="k">return</span> <span class="n">output_clean</span><span class="p">,</span> <span class="n">tempdir_clean</span>
 
 </div>
 <div class="viewcode-block" id="score_main"><a class="viewcode-back" href="../../score_frag_dag.html#pactolus.score_frag_dag.score_main">[docs]</a><span class="k">def</span> <span class="nf">score_main</span><span class="p">(</span><span class="n">use_command_line</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>

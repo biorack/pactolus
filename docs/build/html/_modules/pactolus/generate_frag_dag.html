@@ -121,7 +121,7 @@
   <h1>Source code for pactolus.generate_frag_dag</h1><div class="highlight"><pre>
 <span class="c">#!python</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Generate fragmentation trees for molecules.</span>
+<span class="sd">Generate fragmentation directed acyclic graph (ie: trees) for molecules.</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="n">__authors__</span> <span class="o">=</span> <span class="s">&#39;Curt R. Fischer, Oliver Ruebel, Benjamin P. Bowen&#39;</span>
@@ -292,6 +292,7 @@
         <span class="k">if</span> <span class="n">Chem</span><span class="o">.</span><span class="n">RemoveHs</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span><span class="o">.</span><span class="n">GetNumAtoms</span><span class="p">()</span> <span class="o">!=</span> <span class="n">mol</span><span class="o">.</span><span class="n">GetNumAtoms</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Molecule must have only implicit H atoms.&#39;</span><span class="p">)</span>
 
+        <span class="c">#TODO This expression should allow for molecules with a permanent charge, but forbid molecules that can be neutralized</span>
         <span class="k">if</span> <span class="n">GetFormalCharge</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Molecule must have overall neutral charge.&#39;</span><span class="p">)</span>
 
@@ -572,6 +573,8 @@
 
                 <span class="c"># set attributes</span>
                 <span class="n">hdf5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;inchi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inchi</span>
+                <span class="n">hdf5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;permanent_charge&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="c">#TODO: calculate and store the permanent charge automatically</span>
                 <span class="n">hdf5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;num_atoms&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mol_tree</span><span class="o">.</span><span class="n">num_atoms</span>
                 <span class="n">hdf5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;num_bonds&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mol_tree</span><span class="o">.</span><span class="n">num_bonds</span>
                 <span class="n">hdf5_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s">&#39;num_fragments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mol_tree</span><span class="o">.</span><span class="n">num_frags</span>
