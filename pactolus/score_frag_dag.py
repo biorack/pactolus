@@ -257,10 +257,10 @@ def calculate_MIDAS_score(mz_intensity_arr, tree, mass_tol, neutralizations, max
 
     # if there are no matching fragments, the score is 0
     if unique_frag_arr.size == 0:
-        score = 0 
-        match_matrix = None 
+        score = 0
+        match_matrix = None
     # Compute the score and match matrix
-    else:   
+    else:
         # initialize and modify in place the plaus_score array:
         plaus_score = np.zeros(len(tree))
         bfs_plausibility_score(plaus_score, tree, matches=unique_frag_arr)
@@ -1517,11 +1517,13 @@ def collect_score_scan_list_results(temp_filename_lists,
     try:
         output_group = output_file[output_grouppath]
     except KeyError:
-        current_group = output_file['/']   # Split the path into the hiearchy of subgroups to be used.
+        current_group = output_file['/']   # Split the path into the hierarchy of subgroups to be used.
         # Creat all subgroups
         for subgroup in output_grouppath.split('/'):
             current_group = current_group.require_group(subgroup)
         output_group = current_group
+    # create the subgroup for the score matrices
+    output_match_matrix_group = output_group.require_group('match_matrix')
 
 
     score_dataset = output_group.create_dataset(name='score_matrix',
@@ -1554,12 +1556,12 @@ def collect_score_scan_list_results(temp_filename_lists,
                 match_matrix = scan_group[match_matrix_name][:]
                 num_matched[scan_index, compound_index] = match_matrix.sum()
                 # Create a compressed dataset for the match matrix
-                match_matrix_dataset = output_group.create_dataset(name=match_matrix_name,
-                                                                   data=match_matrix,
-                                                                   chunks=True,
-                                                                   fillvalue=False,
-                                                                   compression='gzip',
-                                                                   compression_opts=4)
+                match_matrix_dataset = output_match_matrix_group.create_dataset(name=match_matrix_name,
+                                                                                data=match_matrix,
+                                                                                chunks=True,
+                                                                                fillvalue=False,
+                                                                                compression='gzip',
+                                                                                compression_opts=4)
                 # Write only the few elements that are True to avoid initialization of chunks with False only
                 match_matrix_dataset[match_matrix] = True
 
