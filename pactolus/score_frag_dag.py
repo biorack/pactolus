@@ -3,6 +3,7 @@
 Score spectra/scans against a collection of molecular fragmentation directed acyclic graphs (trees).
 
 """
+# TODO Store pass through metadata from trees in the .npy file to avoid having to traverse the trees again
 # TODO Remove metacyc name
 # TODO Remove metabolite database from the scoring
 # TODO Pull out crossref_db and hit_table function to a new module for post-processing
