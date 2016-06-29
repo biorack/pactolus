@@ -22,7 +22,7 @@ Pactolus is written in pure python. The main dependencies of Pactolus are h5py, 
 
 ### Third-party Copyrights/Licences ###
 
-To avoid the need for external dependencies, Pactolus includes several third-party code as part of the pactolus/third_party package. Third-party code (e.g., codes extracted from BASTet) may include their own copyright and license restrictions. 
+To avoid the need for external dependencies, Pactolus includes several third-party codes as part of the pactolus/third_party package. Third-party code (e.g., codes extracted from BASTet) may include their own copyright and license restrictions. 
 
 ### Copyright ###
 
