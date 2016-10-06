@@ -1071,7 +1071,7 @@ def parse_command_line_args():
                                          action="store",
                                          type=dtypes["bool"],
                                          required=False,
-                                         default=True,
+                                         default=False,
                                          dest="pass_compound_meta")
     optional_argument_group.add_argument("--metabolite_database",
                                          help="The database of metabolites from which the trees were generated." +
@@ -1539,32 +1539,35 @@ def collect_score_scan_list_results(temp_filename_lists,
     time_to_score_with_temp_io = np.zeros(shape=num_scans, dtype='float')
 
     # Open the temporary output files one-by-one and add the data to the output file
+    #temp_filename_lists = [f for f in temp_filename_lists if os.path.isfile(f)]
     for temp_output_filename in temp_filename_lists:
-        temp_output_file=h5py.File(temp_output_filename, 'r')
-        scan_group_names = [g for g in temp_output_file.keys() if g.startswith('scan_') ]
-        # Iterate over all scan scoring results in the temporary output file
-        for scan_group_name in scan_group_names:
-            scan_group = temp_output_file[scan_group_name]
-            scan_index = int(scan_group_name.split('_')[-1])
-            time_to_score[scan_index] = scan_group.attrs['time_to_score'][()]
-            time_to_score_with_temp_io[scan_index] = scan_group.attrs['time_to_score_with_temp_io'][()]
-            match_matrix_dataset_names = [d for d in scan_group.keys() if d.startswith('match_matrix_')]
-            # Copy the scores for the scan into the main output file
-            score_dataset[scan_index, :] = scan_group['score_matrix'][:]
-            # Copy all match-matrices (if any) to the main output file
-            for match_matrix_name in match_matrix_dataset_names:
-                compound_index = int(match_matrix_name.split('_')[-1])
-                match_matrix = scan_group[match_matrix_name][:]
-                num_matched[scan_index, compound_index] = match_matrix.sum()
-                # Create a compressed dataset for the match matrix
-                match_matrix_dataset = output_match_matrix_group.create_dataset(name=match_matrix_name,
-                                                                                data=match_matrix,
-                                                                                chunks=True,
-                                                                                fillvalue=False,
-                                                                                compression='gzip',
-                                                                                compression_opts=4)
-                # Write only the few elements that are True to avoid initialization of chunks with False only
-                match_matrix_dataset[match_matrix] = True
+        try:
+            temp_output_file=h5py.File(temp_output_filename, 'r')
+            scan_group_names = [g for g in temp_output_file.keys() if g.startswith('scan_') ]
+            # Iterate over all scan scoring results in the temporary output file
+            for scan_group_name in scan_group_names:
+                scan_group = temp_output_file[scan_group_name]
+                scan_index = int(scan_group_name.split('_')[-1])
+                time_to_score[scan_index] = scan_group.attrs['time_to_score'][()]
+                time_to_score_with_temp_io[scan_index] = scan_group.attrs['time_to_score_with_temp_io'][()]
+                match_matrix_dataset_names = [d for d in scan_group.keys() if d.startswith('match_matrix_')]
+                # Copy the scores for the scan into the main output file
+                score_dataset[scan_index, :] = scan_group['score_matrix'][:]
+                # Copy all match-matrices (if any) to the main output file
+                for match_matrix_name in match_matrix_dataset_names:
+                    compound_index = int(match_matrix_name.split('_')[-1])
+                    match_matrix = scan_group[match_matrix_name][:]
+                    num_matched[scan_index, compound_index] = match_matrix.sum()
+                    # Create a compressed dataset for the match matrix
+                    match_matrix_dataset = output_match_matrix_group.create_dataset(name=match_matrix_name,
+                                                                                    data=match_matrix,
+                                                                                    chunks=True,
+                                                                                    fillvalue=False,
+                                                                                    compression='gzip',
+                                                                                    compression_opts=4)
+                    # Write only the few elements that are True to avoid initialization of chunks with False only
+                    match_matrix_dataset[match_matrix] = True
+        except IOError:            print temp_output_filename, 'can not open tempfile!!!!'
 
     # Save the number of matched peaks array if anything is available
     if num_matched.sum() > 0:
