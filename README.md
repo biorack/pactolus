@@ -1,4 +1,4 @@
-![pactolus_logo_transparent.png](https://bitbucket.org/repo/RRLkAG/images/1324238230-pactolus_logo_transparent.png)
+![](pactolus_logo.png)
 
 # Welcome to ***MetaIQ*** ! #
 
