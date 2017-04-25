@@ -1,10 +1,8 @@
 ![](pactolus_logo.png)
 
-# Welcome to ***MetaIQ*** ! #
+# Welcome to ***Pactolus*** ! #
 
-MetaIQ is a collection of computational methods for **Meta**bolite **I**dentification and **Q**uantification
-
-One of the main codes currently available via MetaIQ is Pactolus. The goal of Pactolus is to enable the large-scale application of database searching for metabolite identification by overcoming core computational challenge and improving accuracy as well as to provide a foundation for the community to develop new scoring approached in an efficient manner. 
+The goal of Pactolus is to enable the large-scale application of database searching for metabolite identification by overcoming core computational challenge and improving accuracy as well as to provide a foundation for the community to develop new scoring approached in an efficient manner. 
 
 ### Origins of the name Pactolus ###
 
