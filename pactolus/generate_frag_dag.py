@@ -171,9 +171,9 @@ class FragTree(object):
         if Chem.RemoveHs(mol).GetNumAtoms() != mol.GetNumAtoms():
             raise TypeError('Molecule must have only implicit H atoms.')
 
-        #TODO This expression should allow for molecules with a permanent charge, but forbid molecules that can be neutralized
-        if GetFormalCharge(mol) != 0:
-            raise TypeError('Molecule must have overall neutral charge.')
+#        #TODO This expression should allow for molecules with a permanent charge, but forbid molecules that can be neutralized
+#        if GetFormalCharge(mol) != 0:
+#            raise TypeError('Molecule must have overall neutral charge.')
 
         # begin initialization
         self.mol = mol
@@ -376,14 +376,14 @@ class FragTreeLibrary(object):
             self.isotope_dict = isotope_dict
 
         self.max_depth = max_depth
-
+        
+       
         # make list of inchis
         inchi_list = []
         with open(self.input_inchi_file, 'r') as inchi_file:
             for line in inchi_file:
                 inchi_list.append(line.strip())
             assert inchi_list
-
         self.inchi_list = inchi_list
 
         # ensure any pre-existing output logs are overwritten

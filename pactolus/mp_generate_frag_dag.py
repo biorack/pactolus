@@ -458,6 +458,7 @@ def grow_tree_mp(arg):
     isotope_dict = arg[2]
     file_params = arg[3]
     print inchi
+    print mp.current_process()
     grow_tree_from_inchi(inchi,max_depth=md, isotope_dict=isotope_dict, file_params=file_params)
 
 def main():
@@ -511,9 +512,10 @@ def main():
         #grow_tree_from_inchi(inchi,max_depth=cl_params['max_depth'], isotope_dict=isotope_dict, file_params=file_params)
         mp_params.append([inchi,cl_params['max_depth'], isotope_dict, file_params])
         
-    pool = mp.Pool(processes=20)    pool.map(grow_tree_mp, mp_params)
+    pool = mp.Pool(processes=48)
+    pool.map(grow_tree_mp, mp_params)
 
     return
-
+#test
 if __name__ == "__main__":
     main()
