@@ -24,9 +24,6 @@ from scipy.sparse import csc_matrix
 from rdkit import Chem
 from rdkit.Chem.rdMolDescriptors import CalcExactMolWt
 
-# hdf5
-import h5py
-
 # global variables
 PATH_TO_TEST_DATA = './test_data/'
 
@@ -225,8 +222,8 @@ def calculate_MIDAS_score(mz_intensity_arr, tree, mass_tol, neutralizations, max
 
     # Return the reuqested results
     if want_match_matrix:
-        if match_matrix is not None:
-            print (match_matrix.shape, mz_intensity_arr.shape, tree.shape)
+        #if match_matrix is not None:
+        #    print (match_matrix.shape, mz_intensity_arr.shape, tree.shape)
         return score, match_matrix
     else:
         return score, None
@@ -269,8 +266,6 @@ def load_file_lookup_table(path):
             file_lookup_table = None
 
     return file_lookup_table
-
-
 
 
 def compound_metadata_from_trees(table_file,
