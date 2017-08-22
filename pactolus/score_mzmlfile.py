@@ -103,7 +103,7 @@ def setup_inputs(unique_tree_files,spectra_trees,params):
 def main():
     # print command line arguments
     print('starting')
-    parser = argparse.ArgumentParser(description='a command line tool for searching mzml files with pactolus')
+    parser = argparse.ArgumentParser(description='a command line tool for searching mzml files with pactolus.  saves a gzipped csv.')
     parser.add_argument('-i','--infile', help='mzml file to search', required=True)
     parser.add_argument('-o','--outfile', help='name of output file to store results', required=True)
     parser.add_argument('-m2t','--ms2_tolerance', help='tolerance in Daltons for ms2', type=float,default=0.01)
@@ -154,7 +154,7 @@ def main():
              pd.DataFrame(tree_match,columns=['hit_index','tree_filename','max_depth','ms1_neutralization','ms1_tolerance']),how='outer',
              left_index=True,
              right_on='hit_index').drop('hit_index',1)
-    
+
     # spectra_trees['score'] = 0
     # spectra_trees['match_matrix'] = ''
     # spectra_trees['match_matrix'] = spectra_trees['match_matrix'].astype(object)
@@ -178,7 +178,7 @@ def main():
     print('output merged')
     # temp = temp[['precursor_MZ','rt','precursor_intensity','collision_energy','spectrum','tree_filename','ms1_neutralization','score']]
     temp = temp[temp.score>0]
-    temp.to_csv(args['outfile'])
+    temp.to_csv(args['outfile'], compression='gzip')
 
 if __name__ == "__main__":
     main()
