@@ -1,8 +1,12 @@
 
+from datetime import datetime
+def t_str():
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+print('%s: importing'%t_str())
 import sys
 import argparse
 sys.path.insert(0,'/global/homes/b/bpb/repos/pactolus/')
-sys.path.insert(1,'/global/project/projectdirs/metatlas/anaconda/lib/python2.7/site-packages' )
+#sys.path.insert(1,'/global/project/projectdirs/metatlas/anaconda/lib/python2.7/site-packages' )
 
 import pactolus.scoring as pactolus
 from pactolus.mzml_loader import mzml_to_df
@@ -42,13 +46,16 @@ def do_score(input):
     tree,inchikey = get_tree(tree_filename,max_depth=max_depth)
     output = []
     for i,idx in enumerate(indices):
-        score,match_matrix = pactolus.calculate_MIDAS_score(spectra[i],
-                                                            tree,
-                                                            params['ms2_tolerance'],
-                                                            neutralizations=ms2_neutralizations,
-                                                            want_match_matrix=True)
-        if score > 0:
-            output.append((idx,score,inchikey))#,match_matrix))
+        try:
+            score,match_matrix = pactolus.calculate_MIDAS_score(spectra[i],
+                                                                tree,
+                                                                params['ms2_tolerance'],
+                                                                neutralizations=ms2_neutralizations,
+                                                                want_match_matrix=True)
+            if score > 0:
+                output.append((idx,score,inchikey))#,match_matrix))
+        except Exception as e:
+            print('spectrum ',i,'could not be scored for',inchikey,'spectrum=',spectra[i],'error=',e)
     return output
 
 def assemble_results(r,spectra_trees):
@@ -100,28 +107,15 @@ def setup_inputs(unique_tree_files,spectra_trees,params):
     return mp_setup
 
 
-def main():
-    # print command line arguments
-    print('starting')
-    parser = argparse.ArgumentParser(description='a command line tool for searching mzml files with pactolus.  saves a gzipped csv.')
-    parser.add_argument('-i','--infile', help='mzml file to search', required=True)
-    parser.add_argument('-o','--outfile', help='name of output file to store results', required=True)
-    parser.add_argument('-m2t','--ms2_tolerance', help='tolerance in Daltons for ms2', type=float,default=0.01)
-    parser.add_argument('-m1t','--ms1_tolerance', help='tolerance in Daltons for ms1', type=float,default=0.01)
-    parser.add_argument('-m1pn','--ms1_pos_neutralizations', help='adducts to neutralize for in ms1: 1.007276,18.033823,22.989218', type=float,nargs='+',default=[1.007276,18.033823,22.989218])
-    parser.add_argument('-m2pn','--ms2_pos_neutralizations', help='ionization states to neutralize for in ms2: -1.00727646677,-2.0151015067699998,0.00054857990946', type=float,nargs='+',default=[-1.00727646677,-2.0151015067699998,0.00054857990946])
-    parser.add_argument('-m1nn','--ms1_neg_neutralizations', help='adducts to neutralize for in ms1: -1.007276, 59.013851', type=float,nargs='+',default=[-1.007276, 59.013851])
-    parser.add_argument('-m2nn','--ms2_neg_neutralizations', help='ionization states to neutralize for in ms2: 1.00727646677,2.0151015067699998,-0.00054857990946', type=float,nargs='+',default=[1.00727646677,2.0151015067699998,-0.00054857990946])
-    parser.add_argument('-t','--tree_file', help='tree file: /project/projectdirs/metatlas/projects/clean_pactolus_trees/tree_lookup.npy', default='/project/projectdirs/metatlas/projects/clean_pactolus_trees/tree_lookup.npy')
-    parser.add_argument('-n','--num_cores', help='number of cores to use for multiprocessing', type=int,default=64)
+def make_output_filename(file):
+    return ''.join(file.split('.')[:-1])+'.pactolus.gz'
 
-    args = vars(parser.parse_args())
-        
-    if args['infile'].split('.')[-1].lower() == 'mzml':
-        raw_data = mzml_to_df(args['infile']) #returns a dict of dataframes from an mzml file
-    elif (args['infile'].split('.')[-1].lower() == 'h5') | (args['infile'].split('.')[-1].lower() == 'hdf5') | (args['infile'].split('.')[-1].lower() == 'hdf'):
-        raw_data = mgd.df_container_from_metatlas_file(args['infile']) #This is used when input is hdf5 file
-
+def get_spectra_from_file(file):
+    if file.split('.')[-1].lower() == 'mzml':
+        raw_data = mzml_to_df(file) #returns a dict of dataframes from an mzml file
+    elif (file.split('.')[-1].lower() == 'h5') | (file.split('.')[-1].lower() == 'hdf5') | (file.split('.')[-1].lower() == 'hdf'):
+        raw_data = mgd.df_container_from_metatlas_file(file) #This is used when input is hdf5 file
+    spectra=None
     if isinstance(raw_data['ms2_pos'],pd.DataFrame) & isinstance(raw_data['ms2_neg'],pd.DataFrame): #it has both pos and neg spectra
         spectra = pd.concate([create_msms_dataframe(raw_data['ms2_pos']),create_msms_dataframe(raw_data['ms2_neg'])])
     elif isinstance(raw_data['ms2_pos'],pd.DataFrame):
@@ -130,15 +124,25 @@ def main():
         spectra = create_msms_dataframe(raw_data['ms2_neg'])
     else:
         print('File has no MSMS data.')#, file=sys.stderr)
-        sys.exit(1)
+        open(make_output_filename(file), 'a').close() #make empty file
 
-    
+    return spectra
+
+def associate_spectra_with_trees(spectra,trees,args):
     #filter out values < precursor + tolerance
+    keep_spectra = []
     for i,row in spectra.iterrows():
         spectra.set_value(i,'spectrum',filtered_spectrum(row.spectrum,row.precursor_mz,args['ms1_tolerance']))
 
+    for i,row in spectra.iterrows():
+        if len(row.spectrum) > 1: #spectrum has one or more ions
+            keep_spectra.append(True)
+        else:
+            keep_spectra.append(False)
+    spectra = spectra[keep_spectra] #this will drop any spectra that don't have values.
+
     #Get hits to trees neutralizing by adduct
-    trees = np.load(args['tree_file'])
+    
     tree_match = []
     for i,row in spectra.iterrows():
         if row.polarity == 'positive':
@@ -163,10 +167,9 @@ def main():
     spectra_trees['ms2_neutralizations'] = spectra_trees['ms2_neutralizations'].astype(object)
     spectra_trees['ms2_neutralizations'] = spectra_trees.apply(lambda x: args['ms2_pos_neutralizations'] if x['polarity']=='positive' else args['ms2_neg_neutralizations'],axis=1)
     spectra_trees.reset_index(inplace=True,drop=True)
-    unique_tree_files = spectra_trees.groupby('tree_filename').indices
+    return spectra_trees
 
-    mp_data = setup_inputs(unique_tree_files,spectra_trees,args)
-    print('data is setup')
+def score_and_save(file,mp_data,spectra_trees,args):
     p = mp.Pool(args['num_cores'])
     r = p.map(do_score,mp_data)
     p.close()
@@ -178,7 +181,54 @@ def main():
     print('output merged')
     # temp = temp[['precursor_MZ','rt','precursor_intensity','collision_energy','spectrum','tree_filename','ms1_neutralization','score']]
     temp = temp[temp.score>0]
-    temp.to_csv(args['outfile'], compression='gzip')
+    temp.to_csv(make_output_filename(file), index=False, compression='gzip')
+
+def main():
+    # print command line arguments
+    print('%s: starting'%t_str())
+    parser = argparse.ArgumentParser(description='a command line tool for searching mzml files with pactolus.  saves a gzipped csv.')
+    parser.add_argument('-i','--infile', help='mzml file to search', required=True)
+    #parser.add_argument('-o','--outfile', help='name of output file to store results', required=True)
+    parser.add_argument('-m2t','--ms2_tolerance', help='tolerance in Daltons for ms2', type=float,default=0.01)
+    parser.add_argument('-m1t','--ms1_tolerance', help='tolerance in Daltons for ms1', type=float,default=0.01)
+    parser.add_argument('-m1pn','--ms1_pos_neutralizations', help='adducts to neutralize for in ms1: 1.007276,18.033823,22.989218', type=float,nargs='+',default=[1.007276,18.033823,22.989218])
+    parser.add_argument('-m2pn','--ms2_pos_neutralizations', help='ionization states to neutralize for in ms2: -1.00727646677,-2.0151015067699998,0.00054857990946', type=float,nargs='+',default=[-1.00727646677,-2.0151015067699998,0.00054857990946])
+    parser.add_argument('-m1nn','--ms1_neg_neutralizations', help='adducts to neutralize for in ms1: -1.007276, 59.013851', type=float,nargs='+',default=[-1.007276, 59.013851])
+    parser.add_argument('-m2nn','--ms2_neg_neutralizations', help='ionization states to neutralize for in ms2: 1.00727646677,2.0151015067699998,-0.00054857990946', type=float,nargs='+',default=[1.00727646677,2.0151015067699998,-0.00054857990946])
+    parser.add_argument('-t','--tree_file', help='tree file: /project/projectdirs/metatlas/projects/clean_pactolus_trees/tree_lookup.npy', default='/project/projectdirs/metatlas/projects/clean_pactolus_trees/tree_lookup.npy')
+    parser.add_argument('-n','--num_cores', help='number of cores to use for multiprocessing', type=int,default=32)
+    parser.add_argument('-overwrite','--overwrite', help='Overwrite pre-existing file(s): True/False', type=bool,default=False)
+
+    args = vars(parser.parse_args())
+
+    trees = np.load(args['tree_file'])
+
+    if os.path.isdir(args['infile']): 
+        # read mzml 
+        files = glob.glob(os.path.join(args['infile'],'*.mzML'))
+        print(len(files),'files with mzML')
+        files.extend(glob.glob(os.path.join(args['infile'],'*.mzml')))
+        print(len(files),'files with mzml')
+        if args['overwrite'] == False:
+            files = [f for f in files if not os.path.isfile(make_output_filename(f))]
+
+        print(len(files),'files to process')
+    else:
+        files = [args['infile']]
+
+    for file in files:
+        print('%s: getting spectra for %s'%(t_str(),file))
+        spectra = get_spectra_from_file(file)    
+        if spectra is not None:
+            print('%s: linking spectra with trees for %s'%(t_str(),file))
+            spectra_trees = associate_spectra_with_trees(spectra,trees,args)
+            unique_tree_files = spectra_trees.groupby('tree_filename').indices
+            print('%s: setting up input for %s'%(t_str(),file))
+            mp_data = setup_inputs(unique_tree_files,spectra_trees,args)
+            print('%s: data is setup; doing multiprocessing with %d cores'%(t_str(),args['num_cores']))
+            score_and_save(file,mp_data,spectra_trees,args)
+            print('%s: finished'%t_str())
+
 
 if __name__ == "__main__":
     main()
