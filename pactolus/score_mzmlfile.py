@@ -145,7 +145,7 @@ def associate_spectra_with_trees(spectra,trees,args):
     
     tree_match = []
     for i,row in spectra.iterrows():
-        if row.polarity == 'positive':
+        if 'positive' in row.polarity:
             ms1_neutralizations = args['ms1_pos_neutralizations']
         else:
             ms1_neutralizations = args['ms1_neg_neutralizations']
@@ -165,7 +165,7 @@ def associate_spectra_with_trees(spectra,trees,args):
     spectra_trees['ms2_tolerance'] = args['ms2_tolerance']
     spectra_trees['ms2_neutralizations'] = ''
     spectra_trees['ms2_neutralizations'] = spectra_trees['ms2_neutralizations'].astype(object)
-    spectra_trees['ms2_neutralizations'] = spectra_trees.apply(lambda x: args['ms2_pos_neutralizations'] if x['polarity']=='positive' else args['ms2_neg_neutralizations'],axis=1)
+    spectra_trees['ms2_neutralizations'] = spectra_trees.apply(lambda x: args['ms2_pos_neutralizations'] if 'positive' in x['polarity'] else args['ms2_neg_neutralizations'],axis=1)
     spectra_trees.reset_index(inplace=True,drop=True)
     return spectra_trees
 
