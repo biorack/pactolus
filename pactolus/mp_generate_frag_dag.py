@@ -19,7 +19,7 @@ from time import time
 
 # command line args
 import argparse
-from pactolus.third_party.argparse_helper import RawDescriptionDefaultHelpArgParseFormatter
+# from pactolus.third_party.argparse_helper import RawDescriptionDefaultHelpArgParseFormatter
 
 # other common libraries
 import csv
@@ -30,6 +30,7 @@ import numpy as np
 # rdkit
 from rdkit import Chem
 from rdkit.Chem.rdmolops import GetFormalCharge
+from rdkit.Chem import rdqueries
 
 # h5py
 import h5py
@@ -391,8 +392,8 @@ def command_line_params():
 
     :return: dict with command line parameters
     """
-    parser = argparse.ArgumentParser(add_help=False,
-                                     formatter_class=RawDescriptionDefaultHelpArgParseFormatter)
+    parser = argparse.ArgumentParser(add_help=False)
+                                     # formatter_class=RawDescriptionDefaultHelpArgParseFormatter)
     parser.add_argument("--inchi_file", '-inchi',
                         action='store',
                         default='test_FragTreeLibrary_inchis.txt',
@@ -459,6 +460,7 @@ def grow_tree_mp(arg):
     file_params = arg[3]
     print inchi
     print mp.current_process()
+
     grow_tree_from_inchi(inchi,max_depth=md, isotope_dict=isotope_dict, file_params=file_params)
 
 def main():
@@ -509,11 +511,21 @@ def main():
 #        grow_tree_from_inchi(inchi,max_depth=cl_params['max_depth'], isotope_dict=isotope_dict, file_params=file_params)
     mp_params = []
     for inchi in inchi_list:
-        #grow_tree_from_inchi(inchi,max_depth=cl_params['max_depth'], isotope_dict=isotope_dict, file_params=file_params)
-        mp_params.append([inchi,cl_params['max_depth'], isotope_dict, file_params])
-        
-    pool = mp.Pool(processes=48)
+        mol = Chem.MolFromInchi(inchi)
+        q = rdqueries.AtomNumEqualsQueryAtom(6)
+        try:
+            # In the code above, you have to have at least one bond to break or it will crash.  
+            if len(mol.GetAtomsMatchingQuery(q)) > 1:
+                #grow_tree_from_inchi(inchi,max_depth=cl_params['max_depth'], isotope_dict=isotope_dict, file_params=file_params)
+                mp_params.append((inchi,cl_params['max_depth'], isotope_dict, file_params))
+        except:
+            print(inchi)
+            
+    pool = mp.Pool(processes=10)
     pool.map(grow_tree_mp, mp_params)
+    pool.close()
+    # for p in mp_params:
+        # grow_tree_mp(p)
 
     return
 #test

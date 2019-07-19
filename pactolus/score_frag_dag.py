@@ -97,7 +97,8 @@ Numpy data type (dtype) used for hit tables
 """
 
 FILE_LOOKUP_TABLE_DTYPE = np.dtype([('filename', 'a400'),
-                                    ('ms1_mass', 'f8'), ])
+                                    ('ms1_mass', 'f8'),
+                                   ('max_depth','i4')])
 """
 Numpy data dtype (dtype) used for the tree file lookup table
 """
@@ -324,9 +325,10 @@ def make_file_lookup_table_by_MS1_mass(tree_files=None, path=None, save_result=N
             group_key = file_reader.keys()[0]
             data_key = file_reader[group_key].keys()[0]
             ms1_mass = file_reader[group_key][data_key]['mass_vec'][-1]  # parent mass is at bottom of table
-            tree_files_by_ms1_mass[idx] = (filename, ms1_mass)
+            max_depth = int(data_key.split('=')[-1])
+            tree_files_by_ms1_mass[idx] = (filename, ms1_mass,max_depth)
         except (TypeError, ValueError, IOError):
-            tree_files_by_ms1_mass[idx] = (filename, -1)  # a "score" when file IO problems occur is flagged as -1
+            tree_files_by_ms1_mass[idx] = (filename, -1, 0)  # a "score" when file IO problems occur is flagged as -1
             print "Warning: Could not read MS1 mass from h5 file %s" % filename
 
     # sort, save results if desired, and return
@@ -1567,7 +1569,8 @@ def collect_score_scan_list_results(temp_filename_lists,
                                                                                     compression_opts=4)
                     # Write only the few elements that are True to avoid initialization of chunks with False only
                     match_matrix_dataset[match_matrix] = True
-        except IOError:            print temp_output_filename, 'can not open tempfile!!!!'
+        except IOError:
+            print temp_output_filename, 'can not open tempfile!!!!'
 
     # Save the number of matched peaks array if anything is available
     if num_matched.sum() > 0:

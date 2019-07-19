@@ -54,6 +54,8 @@ def create_job_script(infile=None,
     /global/homes/b/bpb/repos/pactolus/pactolus/sc
     
     """
+    hdf_flag = 'export HDF5_USE_FILE_LOCKING=FALSE'
+
     #add trailing spaces to each row.
     header_str = ['#!/bin/bash -l',
                   '#SBATCH --account=%s'%project_id,
@@ -70,8 +72,9 @@ def create_job_script(infile=None,
     if license_scratch:
         header_str.append('#SBATCH -L scratch')
 
+    # cmd_str = ("%s && %s %s "%(hdf_flag,python,pactolus_script),
     cmd_str = ("%s %s "%(python,pactolus_script),
-              "--infile '%s' "%(infile),
+              '--infile "%s" '%(infile),
                "--ms2_tolerance %.4f --ms1_tolerance %.4f "%(ms2_tolerance,ms1_tolerance),
             "--ms1_pos_neutralizations %s "%(' '.join(map(str,ms1_pos_neutralizations))),
             "--ms2_pos_neutralizations %s "%(' '.join(map(str,ms2_pos_neutralizations))),
@@ -122,13 +125,28 @@ def main():
     done_files = find_files(args['indir'],'*.pactolus.gz') #find all the completed files
     done_files = list(done_files)
     no_extension_files = list(set([f.split('.')[0] for f in files]) - set([f.split('.')[0] for f in done_files]))
-    files = ['%s.mzML'%f for f in no_extension_files]
+    prescreened_files = ['%s.mzML'%f for f in no_extension_files]
+
+    paths = [os.path.split('%s.mzML'%f)[0] for f in no_extension_files]
+    paths = list(set(paths))
+    bad_paths = []
+    for p in paths:
+        if not os.access(p, os.W_OK):
+            print('not writable',p)
+            bad_paths.append(p)
+
+    files = []
+    for f in prescreened_files:
+        if not os.path.split(f)[0] in bad_paths:
+            files.append(f)
+
     # files.extend(glob.glob(os.path.join(args['indir'],'*.mzml')))
     # print(len(files),'files with mzml')
 
     print(len(files),'files to process')
     with open(args['outfile'],'w') as script_fid:
         for file in files:
+
             job_script = create_job_script(infile=file,
                                             errlog=os.path.join(args['log_path'],os.path.basename(file)+'.err'),
                                             outlog=os.path.join(args['log_path'],os.path.basename(file)+'.out'),

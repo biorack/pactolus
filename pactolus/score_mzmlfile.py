@@ -218,7 +218,13 @@ def main():
 
     for file in files:
         print('%s: getting spectra for %s'%(t_str(),file))
-        spectra = get_spectra_from_file(file)    
+        try:
+            spectra = get_spectra_from_file(file)
+        except:
+            print('ERROR: UNKNOWN ERROR WITH FILE %s'%file)
+            open(make_output_filename(file), 'a').close() #make empty file
+            print('EMPTY MADE: %s'%file)
+            sys.exit('ERROR EXITING: UNKNOWN ERROR WITH FILE %s'%file)
         if spectra is not None:
             print('%s: linking spectra with trees for %s'%(t_str(),file))
             spectra_trees = associate_spectra_with_trees(spectra,trees,args)

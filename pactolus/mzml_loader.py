@@ -10,9 +10,6 @@ import traceback
 import pandas as pd
 import pymzml
 
-from metatlas import __version__
-
-
 def read_spectrum(spectrum, index):
     """Read a single spectrum
 
